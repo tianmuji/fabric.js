@@ -1,3 +1,4 @@
+// @ts-nocheck
 // https://www.typescriptlang.org/docs/handbook/utility-types.html
 import type { Gradient } from './gradient/Gradient';
 import type { Pattern } from './Pattern';
@@ -120,7 +121,7 @@ export type Abortable = {
    * handle aborting
    * @see https://developer.mozilla.org/en-US/docs/Web/API/AbortController/signal
    */
-  signal?: AbortSignal;
+  signal?: any;
 };
 
 export type TOptions<T> = Partial<T> & Record<string, any>;

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { BorderProps } from './BorderProps';
 import type { ControlProps } from './ControlProps';
 import type { LockInteractionProps } from './LockInteractionProps';
@@ -24,14 +25,14 @@ export interface FabricObjectProps
    * @type CSSStyleDeclaration['cursor'] | null
    * @default null
    */
-  hoverCursor: CSSStyleDeclaration['cursor'] | null;
+  hoverCursor: string | null;
 
   /**
    * Default cursor value used when moving this object on canvas
    * @type CSSStyleDeclaration['cursor'] | null
    * @default null
    */
-  moveCursor: CSSStyleDeclaration['cursor'] | null;
+  moveCursor: string | null;
 
   /**
    * Selection Background color of an object. colored layer behind the object when it is active.

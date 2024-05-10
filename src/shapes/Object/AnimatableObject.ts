@@ -58,6 +58,7 @@ export abstract class AnimatableObject<
     ).colorProperties.includes(path[path.length - 1]);
     const { easing, duration, abort, startValue, onChange, onComplete } =
       options;
+    //@ts-ignore
     const animationOptions = {
       target: this,
       // path.reduce... is the current value in case start value isn't provided
@@ -93,7 +94,6 @@ export abstract class AnimatableObject<
           onComplete(value, valueProgress, durationProgress);
       },
     } as AnimationOptions<T>;
-
     return (
       propIsColor
         ? animateColor(animationOptions as ColorAnimationOptions)

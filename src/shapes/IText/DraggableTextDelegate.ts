@@ -1,4 +1,5 @@
-import type { Canvas } from '../../canvas/Canvas';
+// @ts-nocheck
+import type { Canvas as FabricCanvas } from '../../canvas/Canvas';
 import type {
   DragEventData,
   DropEventData,

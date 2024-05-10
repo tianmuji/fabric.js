@@ -1,5 +1,5 @@
 import type { CollectionEvents, ObjectEvents } from '../EventTypeDefs';
-import { createCollectionMixin } from '../Collection';
+import { createCollectionMixin, GroupCollection } from '../Collection';
 import type { TClassProperties, TSVGReviver, TOptions } from '../typedefs';
 import {
   invertTransform,
@@ -11,7 +11,7 @@ import {
 } from '../util/misc/objectEnlive';
 import { applyTransformToObject } from '../util/misc/objectTransforms';
 import { FabricObject } from './Object/FabricObject';
-import { Rect } from './Rect';
+import { Rect as FabricRect } from './Rect';
 import { classRegistry } from '../ClassRegistry';
 import type { FabricObjectProps, SerializedObjectProps } from './Object/types';
 import { log } from '../util/internals/console';
@@ -62,7 +62,7 @@ export interface GroupProps extends FabricObjectProps, GroupOwnProps {
   layoutManager: LayoutManager;
 }
 
-export const groupDefaultValues: Partial<TClassProperties<Group>> = {
+export const groupDefaultValues = {
   strokeWidth: 0,
   subTargetCheck: false,
   interactive: false,
@@ -75,9 +75,7 @@ export const groupDefaultValues: Partial<TClassProperties<Group>> = {
  * @fires layout:after
  */
 export class Group
-  extends createCollectionMixin(
-    FabricObject<GroupProps, SerializedGroupProps, GroupEvents>
-  )
+  extends GroupCollection
   implements GroupProps
 {
   /**
@@ -92,12 +90,7 @@ export class Group
    * Used to allow targeting of object inside groups.
    * set to true if you want to select an object inside a group.\
    * **REQUIRES** `subTargetCheck` set to true
-   * This will be not removed but slowly replaced with a method setInteractive
-   * that will take care of enabling subTargetCheck and necessary object events.
-   * There is too much attached to group interactivity to just be evaluated by a
-   * boolean in the code
    * @default
-   * @deprecated
    * @type boolean
    */
   declare interactive: boolean;
@@ -155,9 +148,6 @@ export class Group
       type: LAYOUT_TYPE_INITIALIZATION,
       target: this,
       targets: [...objects],
-      // @TODO remove this concept from the layout manager.
-      // Layout manager will calculate the correct position,
-      // group options can override it later.
       x: options.left,
       y: options.top,
     });
@@ -308,14 +298,13 @@ export class Group
     selected: T,
     { target: object }: ObjectEvents[T extends true ? 'selected' : 'deselected']
   ) {
-    const activeObjects = this._activeObjects;
     if (selected) {
-      activeObjects.push(object);
+      this._activeObjects.push(object);
       this._set('dirty', true);
-    } else if (activeObjects.length > 0) {
-      const index = activeObjects.indexOf(object);
+    } else if (this._activeObjects.length > 0) {
+      const index = this._activeObjects.indexOf(object);
       if (index > -1) {
-        activeObjects.splice(index, 1);
+        this._activeObjects.splice(index, 1);
         this._set('dirty', true);
       }
     }
@@ -463,7 +452,7 @@ export class Group
    * @return {Boolean}
    */
   isOnACache(): boolean {
-    return this.ownCaching || (!!this.parent && this.parent.isOnACache());
+    return this.ownCaching || (!!this.group && this.group.isOnACache());
   }
 
   /**
@@ -578,10 +567,7 @@ export class Group
   }
 
   dispose() {
-    this.layoutManager.unsubscribeTargets({
-      targets: this.getObjects(),
-      target: this,
-    });
+    this.layoutManager.unsubscribeTarget(this);
     this._activeObjects = [];
     this.forEachObject((object) => {
       this._watchObject(false, object);
@@ -597,7 +583,7 @@ export class Group
     if (!this.backgroundColor) {
       return '';
     }
-    const fillStroke = Rect.prototype._toSVG.call(this);
+    const fillStroke = FabricRect.prototype._toSVG.call(this);
     const commons = fillStroke.indexOf('COMMON_PARTS');
     fillStroke[commons] = 'for="group" ';
     const markup = fillStroke.join('');
@@ -684,11 +670,6 @@ export class Group
       } else {
         group.layoutManager = new LayoutManager();
       }
-      group.layoutManager.subscribeTargets({
-        type: LAYOUT_TYPE_INITIALIZATION,
-        target: group,
-        targets: group.getObjects(),
-      });
       group.setCoords();
       return group;
     });

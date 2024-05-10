@@ -12,7 +12,7 @@ import type { TextLinesInfo } from './Text/Text';
 // regexes, list of properties that are not suppose to change by instances, magic consts.
 // this will be a separated effort
 export const textboxDefaultValues: Partial<TClassProperties<Textbox>> = {
-  minWidth: 20,
+  minWidth: 100,
   dynamicMinWidth: 2,
   lockScalingFlip: true,
   noScaleCache: false,
@@ -92,9 +92,9 @@ export class Textbox<
 
   static textLayoutProperties = [...IText.textLayoutProperties, 'width'];
 
-  static ownDefaults = textboxDefaultValues;
+  static ownDefaults: Record<string, any> = textboxDefaultValues;
 
-  static getDefaults(): Record<string, any> {
+  static getDefaults() {
     return {
       ...super.getDefaults(),
       controls: createTextboxDefaultControls(),
@@ -128,6 +128,7 @@ export class Textbox<
     }
     // clear cache and re-calculate height
     this.height = this.calcTextHeight();
+    console.log('calcTextHeight', this.height)
   }
 
   /**
@@ -225,10 +226,9 @@ export class Textbox<
   }
 
   /**
-   * @protected
    * @param {Number} lineIndex
    * @param {Number} charIndex
-   * @return {TextStyleDeclaration} a style object reference to the existing one or a new empty object when undefined
+   * @private
    */
   _getStyleDeclaration(
     lineIndex: number,
@@ -257,7 +257,10 @@ export class Textbox<
     style: object
   ) {
     const map = this._styleMap[lineIndex];
-    super._setStyleDeclaration(map.line, map.offset + charIndex, style);
+    lineIndex = map.line;
+    charIndex = map.offset + charIndex;
+
+    this.styles[lineIndex][charIndex] = style;
   }
 
   /**
@@ -265,9 +268,11 @@ export class Textbox<
    * @param {Number} charIndex
    * @private
    */
-  protected _deleteStyleDeclaration(lineIndex: number, charIndex: number) {
+  _deleteStyleDeclaration(lineIndex: number, charIndex: number) {
     const map = this._styleMap[lineIndex];
-    super._deleteStyleDeclaration(map.line, map.offset + charIndex);
+    lineIndex = map.line;
+    charIndex = map.offset + charIndex;
+    delete this.styles[lineIndex][charIndex];
   }
 
   /**
@@ -291,7 +296,7 @@ export class Textbox<
    */
   protected _setLineStyle(lineIndex: number) {
     const map = this._styleMap[lineIndex];
-    super._setLineStyle(map.line);
+    this.styles[map.line] = {};
   }
 
   /**
@@ -550,8 +555,7 @@ export class Textbox<
    * @param {Array} [propertiesToInclude] Any properties that you might want to additionally include in the output
    * @return {Object} object representation of an instance
    */
-  // cant use ts-expect-error because of ts 5.3 cross check
-  // @ts-ignore TS this typing limitations
+  // @ts-expect-error TS this typing limitations
   toObject<
     T extends Omit<Props & TClassProperties<this>, keyof SProps>,
     K extends keyof T = never

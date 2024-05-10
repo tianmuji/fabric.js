@@ -5,8 +5,13 @@ export const log = (
   // eslint-disable-next-line no-restricted-syntax
   console[severity]('fabric', ...optionalParams);
 
+// copy from lib.es2022.error.d.ts
+interface ErrorOptions {
+  cause?: unknown;
+}
 export class FabricError extends Error {
   constructor(message?: string, options?: ErrorOptions) {
+    // @ts-ignore
     super(`fabric: ${message}`, options);
   }
 }

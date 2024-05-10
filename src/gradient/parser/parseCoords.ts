@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { isPercent } from '../../parser/percent';
 import type { TSize } from '../../typedefs';
 import type { GradientCoords, GradientType, GradientUnits } from '../typedefs';

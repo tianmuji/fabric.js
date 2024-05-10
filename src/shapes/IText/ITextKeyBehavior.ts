@@ -11,6 +11,48 @@ import { LEFT, RIGHT } from '../../constants';
 import type { IText } from './IText';
 import type { TextStyleDeclaration } from '../Text/StyledText';
 
+// copy from dom.d.ts
+interface KeyboardEvent {
+  /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/altKey) */
+  readonly altKey: boolean;
+  /**
+   * @deprecated
+   *
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/charCode)
+   */
+  readonly charCode: number;
+  /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/code) */
+  readonly code: string;
+  /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/ctrlKey) */
+  readonly ctrlKey: boolean;
+  /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/isComposing) */
+  readonly isComposing: boolean;
+  /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/key) */
+  readonly key: string;
+  /**
+   * @deprecated
+   *
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/keyCode)
+   */
+  readonly keyCode: number;
+  /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/location) */
+  readonly location: number;
+  /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/metaKey) */
+  readonly metaKey: boolean;
+  /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/repeat) */
+  readonly repeat: boolean;
+  /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/shiftKey) */
+  readonly shiftKey: boolean;
+  /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/getModifierState) */
+  getModifierState(keyArg: string): boolean;
+  /** @deprecated */
+  // initKeyboardEvent(typeArg: string, bubblesArg?: boolean, cancelableArg?: boolean, viewArg?: Window | null, keyArg?: string, locationArg?: number, ctrlKey?: boolean, altKey?: boolean, shiftKey?: boolean, metaKey?: boolean): void;
+  readonly DOM_KEY_LOCATION_STANDARD: 0x00;
+  readonly DOM_KEY_LOCATION_LEFT: 0x01;
+  readonly DOM_KEY_LOCATION_RIGHT: 0x02;
+  readonly DOM_KEY_LOCATION_NUMPAD: 0x03;
+}
+
 export abstract class ITextKeyBehavior<
   Props extends TOptions<TextProps> = Partial<TextProps>,
   SProps extends SerializedTextProps = SerializedTextProps,
@@ -41,7 +83,7 @@ export abstract class ITextKeyBehavior<
    */
   declare ctrlKeysMapDown: TKeyMapIText;
 
-  declare hiddenTextarea: HTMLTextAreaElement | null;
+  declare hiddenTextarea: any | null;
 
   /**
    * DOM container to append the hiddenTextarea.
@@ -51,7 +93,7 @@ export abstract class ITextKeyBehavior<
    * @type HTMLElement
    * @default
    */
-  declare hiddenTextareaContainer?: HTMLElement | null;
+  declare hiddenTextareaContainer?: any | null;
 
   private declare _clickHandlerInitialized: boolean;
   private declare _copyDone: boolean;
@@ -60,44 +102,48 @@ export abstract class ITextKeyBehavior<
   /**
    * Initializes hidden textarea (needed to bring up keyboard in iOS)
    */
+
+  // todo
+  // do not support textarea
+  // how to mock TextArea Cursor in HarmonyOS?
   initHiddenTextarea() {
-    const doc =
-      (this.canvas && getDocumentFromElement(this.canvas.getElement())) ||
-      getFabricDocument();
-    const textarea = doc.createElement('textarea');
-    Object.entries({
-      autocapitalize: 'off',
-      autocorrect: 'off',
-      autocomplete: 'off',
-      spellcheck: 'false',
-      'data-fabric': 'textarea',
-      wrap: 'off',
-    }).map(([attribute, value]) => textarea.setAttribute(attribute, value));
-    const { top, left, fontSize } = this._calcTextareaPosition();
-    // line-height: 1px; was removed from the style to fix this:
-    // https://bugs.chromium.org/p/chromium/issues/detail?id=870966
-    textarea.style.cssText = `position: absolute; top: ${top}; left: ${left}; z-index: -999; opacity: 0; width: 1px; height: 1px; font-size: 1px; padding-top: ${fontSize};`;
-
-    (this.hiddenTextareaContainer || doc.body).appendChild(textarea);
-
-    Object.entries({
-      blur: 'blur',
-      keydown: 'onKeyDown',
-      keyup: 'onKeyUp',
-      input: 'onInput',
-      copy: 'copy',
-      cut: 'copy',
-      paste: 'paste',
-      compositionstart: 'onCompositionStart',
-      compositionupdate: 'onCompositionUpdate',
-      compositionend: 'onCompositionEnd',
-    } as Record<string, keyof this>).map(([eventName, handler]) =>
-      textarea.addEventListener(
-        eventName,
-        (this[handler] as Function).bind(this)
-      )
-    );
-    this.hiddenTextarea = textarea;
+    // const doc =
+    //   (this.canvas && getDocumentFromElement(this.canvas.getElement())) ||
+    //   getFabricDocument();
+    // const textarea = doc.createElement('textarea');
+    // Object.entries({
+    //   autocapitalize: 'off',
+    //   autocorrect: 'off',
+    //   autocomplete: 'off',
+    //   spellcheck: 'false',
+    //   'data-fabric': 'textarea',
+    //   wrap: 'off',
+    // }).map(([attribute, value]) => textarea.setAttribute(attribute, value));
+    // const { top, left, fontSize } = this._calcTextareaPosition();
+    // // line-height: 1px; was removed from the style to fix this:
+    // // https://bugs.chromium.org/p/chromium/issues/detail?id=870966
+    // textarea.style.cssText = `position: absolute; top: ${top}; left: ${left}; z-index: -999; opacity: 0; width: 1px; height: 1px; font-size: 1px; padding-top: ${fontSize};`;
+    //
+    // (this.hiddenTextareaContainer || doc.body).appendChild(textarea);
+    //
+    // Object.entries({
+    //   blur: 'blur',
+    //   keydown: 'onKeyDown',
+    //   keyup: 'onKeyUp',
+    //   input: 'onInput',
+    //   copy: 'copy',
+    //   cut: 'copy',
+    //   paste: 'paste',
+    //   compositionstart: 'onCompositionStart',
+    //   compositionupdate: 'onCompositionUpdate',
+    //   onCompositionUpdate: 'onCompositionEnd',
+    // } as Record<string, keyof this>).map(([eventName, handler]) =>
+    //   textarea.addEventListener(
+    //     eventName,
+    //     (this[handler] as Function).bind(this)
+    //   )
+    // );
+    // this.hiddenTextarea = textarea;
   }
 
   /**
@@ -112,30 +158,30 @@ export abstract class ITextKeyBehavior<
    * only used for arrows and combination of modifier keys.
    * @param {KeyboardEvent} e Event object
    */
-  onKeyDown(e: KeyboardEvent) {
-    if (!this.isEditing) {
-      return;
-    }
-    const keyMap = this.direction === 'rtl' ? this.keysMapRtl : this.keysMap;
-    if (e.keyCode in keyMap) {
-      // @ts-expect-error legacy method calling pattern
-      this[keyMap[e.keyCode]](e);
-    } else if (e.keyCode in this.ctrlKeysMapDown && (e.ctrlKey || e.metaKey)) {
-      // @ts-expect-error legacy method calling pattern
-      this[this.ctrlKeysMapDown[e.keyCode]](e);
-    } else {
-      return;
-    }
-    e.stopImmediatePropagation();
-    e.preventDefault();
-    if (e.keyCode >= 33 && e.keyCode <= 40) {
-      // if i press an arrow key just update selection
-      this.inCompositionMode = false;
-      this.clearContextTop();
-      this.renderCursorOrSelection();
-    } else {
-      this.canvas && this.canvas.requestRenderAll();
-    }
+  onKeyDown() {
+    // if (!this.isEditing) {
+    //   return;
+    // }
+    // const keyMap = this.direction === 'rtl' ? this.keysMapRtl : this.keysMap;
+    // if (e.keyCode in keyMap) {
+    //   // @ts-expect-error legacy method calling pattern
+    //   this[keyMap[e.keyCode]](e);
+    // } else if (e.keyCode in this.ctrlKeysMapDown && (e.ctrlKey || e.metaKey)) {
+    //   // @ts-expect-error legacy method calling pattern
+    //   this[this.ctrlKeysMapDown[e.keyCode]](e);
+    // } else {
+    //   return;
+    // }
+    // e.stopImmediatePropagation();
+    // e.preventDefault();
+    // if (e.keyCode >= 33 && e.keyCode <= 40) {
+    //   // if i press an arrow key just update selection
+    //   this.inCompositionMode = false;
+    //   this.clearContextTop();
+    //   this.renderCursorOrSelection();
+    // } else {
+    //   this.canvas && this.canvas.requestRenderAll();
+    // }
   }
 
   /**
@@ -144,128 +190,128 @@ export abstract class ITextKeyBehavior<
    * if a copy/cut event fired, keyup is dismissed
    * @param {KeyboardEvent} e Event object
    */
-  onKeyUp(e: KeyboardEvent) {
-    if (!this.isEditing || this._copyDone || this.inCompositionMode) {
-      this._copyDone = false;
-      return;
-    }
-    if (e.keyCode in this.ctrlKeysMapUp && (e.ctrlKey || e.metaKey)) {
-      // @ts-expect-error legacy method calling pattern
-      this[this.ctrlKeysMapUp[e.keyCode]](e);
-    } else {
-      return;
-    }
-    e.stopImmediatePropagation();
-    e.preventDefault();
-    this.canvas && this.canvas.requestRenderAll();
+  onKeyUp() {
+    // if (!this.isEditing || this._copyDone || this.inCompositionMode) {
+    //   this._copyDone = false;
+    //   return;
+    // }
+    // if (e.keyCode in this.ctrlKeysMapUp && (e.ctrlKey || e.metaKey)) {
+    //   // @ts-expect-error legacy method calling pattern
+    //   this[this.ctrlKeysMapUp[e.keyCode]](e);
+    // } else {
+    //   return;
+    // }
+    // e.stopImmediatePropagation();
+    // e.preventDefault();
+    // this.canvas && this.canvas.requestRenderAll();
   }
 
   /**
    * Handles onInput event
    * @param {Event} e Event object
    */
-  onInput(this: this & { hiddenTextarea: HTMLTextAreaElement }, e: Event) {
-    const fromPaste = this.fromPaste;
-    this.fromPaste = false;
-    e && e.stopPropagation();
-    if (!this.isEditing) {
-      return;
-    }
-    const updateAndFire = () => {
-      this.updateFromTextArea();
-      this.fire('changed');
-      if (this.canvas) {
-        this.canvas.fire('text:changed', { target: this as unknown as IText });
-        this.canvas.requestRenderAll();
-      }
-    };
-    if (this.hiddenTextarea.value === '') {
-      this.styles = {};
-      updateAndFire();
-      return;
-    }
-    // decisions about style changes.
-    const nextText = this._splitTextIntoLines(
-        this.hiddenTextarea.value
-      ).graphemeText,
-      charCount = this._text.length,
-      nextCharCount = nextText.length,
-      selectionStart = this.selectionStart,
-      selectionEnd = this.selectionEnd,
-      selection = selectionStart !== selectionEnd;
-    let copiedStyle: TextStyleDeclaration[] | undefined,
-      removedText,
-      charDiff = nextCharCount - charCount,
-      removeFrom,
-      removeTo;
-
-    const textareaSelection = this.fromStringToGraphemeSelection(
-      this.hiddenTextarea.selectionStart,
-      this.hiddenTextarea.selectionEnd,
-      this.hiddenTextarea.value
-    );
-    const backDelete = selectionStart > textareaSelection.selectionStart;
-
-    if (selection) {
-      removedText = this._text.slice(selectionStart, selectionEnd);
-      charDiff += selectionEnd - selectionStart;
-    } else if (nextCharCount < charCount) {
-      if (backDelete) {
-        removedText = this._text.slice(selectionEnd + charDiff, selectionEnd);
-      } else {
-        removedText = this._text.slice(
-          selectionStart,
-          selectionStart - charDiff
-        );
-      }
-    }
-    const insertedText = nextText.slice(
-      textareaSelection.selectionEnd - charDiff,
-      textareaSelection.selectionEnd
-    );
-    if (removedText && removedText.length) {
-      if (insertedText.length) {
-        // let's copy some style before deleting.
-        // we want to copy the style before the cursor OR the style at the cursor if selection
-        // is bigger than 0.
-        copiedStyle = this.getSelectionStyles(
-          selectionStart,
-          selectionStart + 1,
-          false
-        );
-        // now duplicate the style one for each inserted text.
-        copiedStyle = insertedText.map(
-          () =>
-            // this return an array of references, but that is fine since we are
-            // copying the style later.
-            copiedStyle![0]
-        );
-      }
-      if (selection) {
-        removeFrom = selectionStart;
-        removeTo = selectionEnd;
-      } else if (backDelete) {
-        // detect differences between forwardDelete and backDelete
-        removeFrom = selectionEnd - removedText.length;
-        removeTo = selectionEnd;
-      } else {
-        removeFrom = selectionEnd;
-        removeTo = selectionEnd + removedText.length;
-      }
-      this.removeStyleFromTo(removeFrom, removeTo);
-    }
-    if (insertedText.length) {
-      const { copyPasteData } = getEnv();
-      if (
-        fromPaste &&
-        insertedText.join('') === copyPasteData.copiedText &&
-        !config.disableStyleCopyPaste
-      ) {
-        copiedStyle = copyPasteData.copiedTextStyle;
-      }
-      this.insertNewStyleBlock(insertedText, selectionStart, copiedStyle);
-    }
-    updateAndFire();
+  onInput() {
+    // const fromPaste = this.fromPaste;
+    // this.fromPaste = false;
+    // e && e.stopPropagation();
+    // if (!this.isEditing) {
+    //   return;
+    // }
+    // const updateAndFire = () => {
+    //   this.updateFromTextArea();
+    //   this.fire('changed');
+    //   if (this.canvas) {
+    //     this.canvas.fire('text:changed', { target: this as unknown as IText });
+    //     this.canvas.requestRenderAll();
+    //   }
+    // };
+    // if (this.hiddenTextarea.value === '') {
+    //   this.styles = {};
+    //   updateAndFire();
+    //   return;
+    // }
+    // // decisions about style changes.
+    // const nextText = this._splitTextIntoLines(
+    //     this.hiddenTextarea.value
+    //   ).graphemeText,
+    //   charCount = this._text.length,
+    //   nextCharCount = nextText.length,
+    //   selectionStart = this.selectionStart,
+    //   selectionEnd = this.selectionEnd,
+    //   selection = selectionStart !== selectionEnd;
+    // let copiedStyle: TextStyleDeclaration[] | undefined,
+    //   removedText,
+    //   charDiff = nextCharCount - charCount,
+    //   removeFrom,
+    //   removeTo;
+    //
+    // const textareaSelection = this.fromStringToGraphemeSelection(
+    //   this.hiddenTextarea.selectionStart,
+    //   this.hiddenTextarea.selectionEnd,
+    //   this.hiddenTextarea.value
+    // );
+    // const backDelete = selectionStart > textareaSelection.selectionStart;
+    //
+    // if (selection) {
+    //   removedText = this._text.slice(selectionStart, selectionEnd);
+    //   charDiff += selectionEnd - selectionStart;
+    // } else if (nextCharCount < charCount) {
+    //   if (backDelete) {
+    //     removedText = this._text.slice(selectionEnd + charDiff, selectionEnd);
+    //   } else {
+    //     removedText = this._text.slice(
+    //       selectionStart,
+    //       selectionStart - charDiff
+    //     );
+    //   }
+    // }
+    // const insertedText = nextText.slice(
+    //   textareaSelection.selectionEnd - charDiff,
+    //   textareaSelection.selectionEnd
+    // );
+    // if (removedText && removedText.length) {
+    //   if (insertedText.length) {
+    //     // let's copy some style before deleting.
+    //     // we want to copy the style before the cursor OR the style at the cursor if selection
+    //     // is bigger than 0.
+    //     copiedStyle = this.getSelectionStyles(
+    //       selectionStart,
+    //       selectionStart + 1,
+    //       false
+    //     );
+    //     // now duplicate the style one for each inserted text.
+    //     copiedStyle = insertedText.map(
+    //       () =>
+    //         // this return an array of references, but that is fine since we are
+    //         // copying the style later.
+    //         copiedStyle![0]
+    //     );
+    //   }
+    //   if (selection) {
+    //     removeFrom = selectionStart;
+    //     removeTo = selectionEnd;
+    //   } else if (backDelete) {
+    //     // detect differences between forwardDelete and backDelete
+    //     removeFrom = selectionEnd - removedText.length;
+    //     removeTo = selectionEnd;
+    //   } else {
+    //     removeFrom = selectionEnd;
+    //     removeTo = selectionEnd + removedText.length;
+    //   }
+    //   this.removeStyleFromTo(removeFrom, removeTo);
+    // }
+    // if (insertedText.length) {
+    //   const { copyPasteData } = getEnv();
+    //   if (
+    //     fromPaste &&
+    //     insertedText.join('') === copyPasteData.copiedText &&
+    //     !config.disableStyleCopyPaste
+    //   ) {
+    //     copiedStyle = copyPasteData.copiedTextStyle;
+    //   }
+    //   this.insertNewStyleBlock(insertedText, selectionStart, copiedStyle);
+    // }
+    // updateAndFire();
   }
 
   /**
@@ -282,11 +328,11 @@ export abstract class ITextKeyBehavior<
     this.inCompositionMode = false;
   }
 
-  onCompositionUpdate({ target }: CompositionEvent) {
-    const { selectionStart, selectionEnd } = target as HTMLTextAreaElement;
-    this.compositionStart = selectionStart;
-    this.compositionEnd = selectionEnd;
-    this.updateTextareaPosition();
+  onCompositionUpdate() {
+    // const { selectionStart, selectionEnd } = target as HTMLTextAreaElement;
+    // this.compositionStart = selectionStart;
+    // this.compositionEnd = selectionEnd;
+    // this.updateTextareaPosition();
   }
 
   /**
@@ -342,29 +388,29 @@ export abstract class ITextKeyBehavior<
    * @param {Boolean} isRight
    * @return {Number}
    */
-  getDownCursorOffset(e: KeyboardEvent, isRight: boolean): number {
-    const selectionProp = this._getSelectionForOffset(e, isRight),
-      cursorLocation = this.get2DCursorLocation(selectionProp),
-      lineIndex = cursorLocation.lineIndex;
-    // if on last line, down cursor goes to end of line
-    if (
-      lineIndex === this._textLines.length - 1 ||
-      e.metaKey ||
-      e.keyCode === 34
-    ) {
-      // move to the end of a text
-      return this._text.length - selectionProp;
-    }
-    const charIndex = cursorLocation.charIndex,
-      widthBeforeCursor = this._getWidthBeforeCursor(lineIndex, charIndex),
-      indexOnOtherLine = this._getIndexOnLine(lineIndex + 1, widthBeforeCursor),
-      textAfterCursor = this._textLines[lineIndex].slice(charIndex);
-    return (
-      textAfterCursor.length +
-      indexOnOtherLine +
-      1 +
-      this.missingNewlineOffset(lineIndex)
-    );
+  getDownCursorOffset() {
+    // const selectionProp = this._getSelectionForOffset(e, isRight),
+    //   cursorLocation = this.get2DCursorLocation(selectionProp),
+    //   lineIndex = cursorLocation.lineIndex;
+    // // if on last line, down cursor goes to end of line
+    // if (
+    //   lineIndex === this._textLines.length - 1 ||
+    //   e.metaKey ||
+    //   e.keyCode === 34
+    // ) {
+    //   // move to the end of a text
+    //   return this._text.length - selectionProp;
+    // }
+    // const charIndex = cursorLocation.charIndex,
+    //   widthBeforeCursor = this._getWidthBeforeCursor(lineIndex, charIndex),
+    //   indexOnOtherLine = this._getIndexOnLine(lineIndex + 1, widthBeforeCursor),
+    //   textAfterCursor = this._textLines[lineIndex].slice(charIndex);
+    // return (
+    //   textAfterCursor.length +
+    //   indexOnOtherLine +
+    //   1 +
+    //   this.missingNewlineOffset(lineIndex)
+    // );
   }
 
   /**
@@ -478,7 +524,7 @@ export abstract class ITextKeyBehavior<
     const offset = this[`get${direction}CursorOffset`](
       e,
       this._selectionDirection === RIGHT
-    );
+    ) as number;
     if (e.shiftKey) {
       this.moveCursorWithShift(offset);
     } else {
@@ -488,9 +534,8 @@ export abstract class ITextKeyBehavior<
       const max = this.text.length;
       this.selectionStart = capValue(0, this.selectionStart, max);
       this.selectionEnd = capValue(0, this.selectionEnd, max);
-      // TODO fix: abort and init should be an alternative depending
-      // on selectionStart/End being equal or different
       this.abortCursorAnimation();
+      this._currentCursorOpacity = 1;
       this.initDelayedCursor();
       this._fireSelectionChanged();
       this._updateTextarea();
@@ -642,8 +687,6 @@ export abstract class ITextKeyBehavior<
     }` as const;
     this._currentCursorOpacity = 1;
     if (this[actionName](e)) {
-      // TODO fix: abort and init should be an alternative depending
-      // on selectionStart/End being equal or different
       this.abortCursorAnimation();
       this.initDelayedCursor();
       this._fireSelectionChanged();

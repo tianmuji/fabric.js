@@ -157,11 +157,14 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
   declare selectionFullyContained: boolean;
 
   // cursors
-  declare hoverCursor: CSSStyleDeclaration['cursor'];
-  declare moveCursor: CSSStyleDeclaration['cursor'];
-  declare defaultCursor: CSSStyleDeclaration['cursor'];
-  declare freeDrawingCursor: CSSStyleDeclaration['cursor'];
-  declare notAllowedCursor: CSSStyleDeclaration['cursor'];
+  // todo
+  // cursor exists in HarmonyOS ?
+  // set to string
+  declare hoverCursor: string;
+  declare moveCursor: string;
+  declare defaultCursor: string;
+  declare freeDrawingCursor: string;
+  declare notAllowedCursor: string;
 
   declare containerClass: string;
 
@@ -188,7 +191,7 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
   declare fireMiddleClick: boolean;
 
   /**
-   * Keep track of the subTargets for Mouse Events, ordered bottom up from innermost nested subTarget
+   * Keep track of the subTargets for Mouse Events
    * @type FabricObject[]
    */
   targets: FabricObject[] = [];
@@ -271,7 +274,7 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
    */
   protected declare _target?: FabricObject;
 
-  static ownDefaults = canvasDefaults;
+  static ownDefaults: Record<string, any> = canvasDefaults;
 
   static getDefaults(): Record<string, any> {
     return { ...super.getDefaults(), ...SelectableCanvas.ownDefaults };
@@ -279,27 +282,33 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
 
   declare elements: CanvasDOMManager;
   get upperCanvasEl() {
-    return this.elements.upper?.el;
+    return this.elements.upper?.ctx;
   }
   get contextTop() {
     return this.elements.upper?.ctx;
   }
+  // no wrapper element anymore
+  // just return canvas ctx
   get wrapperEl() {
-    return this.elements.container;
+    return this.elements.upper.ctx;
   }
-  private declare pixelFindCanvasEl: HTMLCanvasElement;
+  private declare pixelFindCanvasEl: CanvasRenderingContext2D | null
   private declare pixelFindContext: CanvasRenderingContext2D;
 
   protected declare _isCurrentlyDrawing: boolean;
   declare freeDrawingBrush?: BaseBrush;
   declare _activeObject?: FabricObject;
 
-  protected initElements(el?: string | HTMLCanvasElement) {
+  protected initElements(el: CanvasRenderingContext2D) {
     this.elements = new CanvasDOMManager(el, {
       allowTouchScrolling: this.allowTouchScrolling,
       containerClass: this.containerClass,
     });
     this._createCacheCanvas();
+  }
+
+  setUpperCtx (ctx: CanvasRenderingContext2D) {
+    this.elements.upper = { ctx }
   }
 
   /**
@@ -413,7 +422,9 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
     this.targetFindTolerance = value;
     const retina = this.getRetinaScaling();
     const size = Math.ceil((value * 2 + 1) * retina);
-    this.pixelFindCanvasEl.width = this.pixelFindCanvasEl.height = size;
+    // todo
+    // delete?
+    // this.pixelFindCanvasEl.width = this.pixelFindCanvasEl.height = size;
     this.pixelFindContext.scale(retina, retina);
   }
 
@@ -621,7 +632,9 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
         theta: degreesToRadians(target.angle),
         width: target.width,
         height: target.height,
-        shiftKey: e.shiftKey,
+        // shiftKey: e.shiftKey,
+        // do not support shiftKey?
+        shiftKey: false,
         altKey,
         original: {
           ...saveObjectTransform(target),
@@ -643,8 +656,8 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
    * @param {String} value Cursor type of the canvas element.
    * @see http://www.w3.org/TR/css3-ui/#cursor
    */
-  setCursor(value: CSSStyleDeclaration['cursor']): void {
-    this.upperCanvasEl.style.cursor = value;
+  setCursor(value: string): void {
+    // this.upperCanvasEl.style.cursor = value;
   }
 
   /**
@@ -707,7 +720,7 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
     this.targets = [];
 
     if (activeObject && aObjects.length >= 1) {
-      if (activeObject.findControl(pointer, isTouchEvent(e))) {
+      if (activeObject._findTargetCorner(pointer, isTouchEvent(e))) {
         // if we hit the corner of the active object, let's return that.
         return activeObject;
       } else if (
@@ -741,7 +754,6 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
         }
       }
     }
-
     return this.searchPossibleTargets(this._objects, pointer);
   }
 
@@ -860,31 +872,15 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
     pointer: Point
   ): FabricObject | undefined {
     const target = this._searchPossibleTargets(objects, pointer);
-
-    // if we found something in this.targets, and the group is interactive, return the innermost subTarget
-    // that is still interactive
+    // if we found something in this.targets, and the group is interactive, return that subTarget
     // TODO: reverify why interactive. the target should be returned always, but selected only
     // if interactive.
-    if (
-      target &&
+    return target &&
       isCollection(target) &&
       target.interactive &&
       this.targets[0]
-    ) {
-      /** targets[0] is the innermost nested target, but it could be inside non interactive groups and so not a selection target */
-      const targets = this.targets;
-      for (let i = targets.length - 1; i > 0; i--) {
-        const t = targets[i];
-        if (!(isCollection(t) && t.interactive)) {
-          // one of the subtargets was not interactive. that is the last subtarget we can return.
-          // we can't dig more deep;
-          return t;
-        }
-      }
-      return targets[0];
-    }
-
-    return target;
+      ? this.targets[0]
+      : target;
   }
 
   /**
@@ -938,8 +934,24 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
    * @return {Point}
    */
   getPointer(e: TPointerEvent, fromViewport = false): Point {
+    // todo
+    // how to mock getBoundingClientRect in HarmonyOS
+    // check HarmonyOS ClickEvent
+    // seems we can get the same as getBoundingClientRect?
+    const area = e.target.area
+    const top = area.position.y as number
+    const left = area.position.x as number
+    const width = area.width as number
+    const height = area.height as number
     const upperCanvasEl = this.upperCanvasEl,
-      bounds = upperCanvasEl.getBoundingClientRect();
+      bounds = {
+        top,
+        left,
+        right: width + left,
+        bottom: height + top,
+        width,
+        height
+      };
     let pointer = getPointer(e),
       boundsWidth = bounds.width || 0,
       boundsHeight = bounds.height || 0;
@@ -953,9 +965,13 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
       }
     }
 
-    this.calcOffset();
-    pointer.x = pointer.x - this._offset.left;
-    pointer.y = pointer.y - this._offset.top;
+    // how to update offset
+    // in this case we can use event to get offset
+    // this.calcOffset();
+    // pointer.x = pointer.x - this._offset.left;
+    // pointer.y = pointer.y - this._offset.top;
+    pointer.x = e.x
+    pointer.y = e.y
     if (!fromViewport) {
       pointer = sendPointToPlane(pointer, undefined, this.viewportTransform);
     }
@@ -982,24 +998,30 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
    * Internal use only
    * @protected
    */
+  // todo
+  // size is optional
+  // to simplify, make width and height required in constructor
   protected _setDimensionsImpl(
     dimensions: TSize,
-    options?: TCanvasSizeOptions
+    options: TCanvasSizeOptions
   ) {
     // @ts-expect-error this method exists in the subclass - should be moved or declared as abstract
     this._resetTransformEventData();
-    super._setDimensionsImpl(dimensions, options);
+    // super._setDimensionsImpl(dimensions, options);
     if (this._isCurrentlyDrawing) {
       this.freeDrawingBrush &&
         this.freeDrawingBrush._setBrushStyles(this.contextTop);
     }
   }
 
+  // todo
+  // how to replace willReadFrequently in HarmonyOS
   protected _createCacheCanvas() {
-    this.pixelFindCanvasEl = createCanvasElement();
-    this.pixelFindContext = this.pixelFindCanvasEl.getContext('2d', {
-      willReadFrequently: true,
-    })!;
+    this.pixelFindCanvasEl = this.elements.upper.ctx;
+    // this.pixelFindContext = this.pixelFindCanvasEl.getContext('2d', {
+    //   willReadFrequently: true,
+    // })!;
+    this.pixelFindContext = this.elements.upper.ctx;
     this.setTargetFindTolerance(this.targetFindTolerance);
   }
 
@@ -1022,10 +1044,12 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
 
   /**
    * Returns &lt;canvas> element on which object selection is drawn
-   * @return {HTMLCanvasElement}
+   * @return {CanvasRenderingContext2D}
    */
-  getSelectionElement(): HTMLCanvasElement {
-    return this.elements.upper.el;
+  // no element anymore
+  // just return canvas ctx
+  getSelectionElement(): CanvasRenderingContext2D {
+    return this.elements.upper.ctx;
   }
 
   /**
@@ -1145,7 +1169,6 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
     }
 
     this._activeObject = object;
-
     if (isActiveSelection(object) && prevActiveObject !== object) {
       object.set('canvas', this);
       object.setCoords();
@@ -1275,9 +1298,7 @@ export class SelectableCanvas<EventSpec extends CanvasEvents = CanvasEvents>
     // free resources
 
     // pixel find canvas
-    // @ts-expect-error disposing
     this.pixelFindContext = null;
-    // @ts-expect-error disposing
     this.pixelFindCanvasEl = undefined;
   }
 

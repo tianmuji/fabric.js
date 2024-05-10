@@ -1,3 +1,4 @@
+import type { TModificationEvents } from '../EventTypeDefs';
 import { Point } from '../Point';
 import { CENTER, iMatrix } from '../constants';
 import type { Group } from '../shapes/Group';
@@ -14,14 +15,8 @@ import {
   LAYOUT_TYPE_OBJECT_MODIFIED,
   LAYOUT_TYPE_OBJECT_MODIFYING,
 } from './constants';
-import type {
-  LayoutContext,
-  LayoutResult,
-  RegistrationContext,
-  StrictLayoutContext,
-} from './types';
+import type { LayoutContext, LayoutResult, StrictLayoutContext } from './types';
 import { classRegistry } from '../ClassRegistry';
-import type { TModificationEvents } from '../EventTypeDefs';
 
 const LAYOUT_MANAGER = 'layoutManager';
 
@@ -32,7 +27,7 @@ export type SerializedLayoutManager = {
 
 export class LayoutManager {
   private declare _prevLayoutStrategy?: LayoutStrategy;
-  protected declare _subscriptions: Map<FabricObject, VoidFunction[]>;
+  private declare _subscriptions: Map<FabricObject, Function[]>;
 
   strategy: LayoutStrategy;
 
@@ -55,106 +50,75 @@ export class LayoutManager {
     this.onBeforeLayout(strictContext);
 
     const layoutResult = this.getLayoutResult(strictContext);
-    if (layoutResult) {
-      this.commitLayout(strictContext, layoutResult);
-    }
+    layoutResult && this.commitLayout(strictContext, layoutResult);
 
     this.onAfterLayout(strictContext, layoutResult);
     this._prevLayoutStrategy = strictContext.strategy;
   }
 
   /**
-   * Attach handlers for events that we know will invalidate the layout when
-   * performed on child objects ( general transforms ).
-   * Returns the disposers for later unsubscribing and cleanup
-   * @param {FabricObject} object
-   * @param {RegistrationContext & Partial<StrictLayoutContext>} context
-   * @returns {VoidFunction[]} disposers remove the handlers
+   * subscribe to object layout triggers
    */
-  protected attachHandlers(
-    object: FabricObject,
-    context: RegistrationContext & Partial<StrictLayoutContext>
-  ): VoidFunction[] {
+  protected subscribe(object: FabricObject, context: StrictLayoutContext) {
     const { target } = context;
-    return (
-      [
-        'modified',
-        'moving',
-        'resizing',
-        'rotating',
-        'scaling',
-        'skewing',
-        'changed',
-        'modifyPoly',
-      ] as (TModificationEvents & 'modified')[]
-    ).map((key) =>
-      object.on(key, (e) =>
-        this.performLayout(
-          key === 'modified'
-            ? {
-                type: LAYOUT_TYPE_OBJECT_MODIFIED,
-                trigger: key,
-                e,
-                target,
-              }
-            : {
-                type: LAYOUT_TYPE_OBJECT_MODIFYING,
-                trigger: key,
-                e,
-                target,
-              }
-        )
-      )
-    );
-  }
-
-  /**
-   * Subscribe an object to transform events that will trigger a layout change on the parent
-   * This is important only for interactive groups.
-   * @param object
-   * @param context
-   */
-  protected subscribe(
-    object: FabricObject,
-    context: RegistrationContext & Partial<StrictLayoutContext>
-  ) {
     this.unsubscribe(object, context);
-    const disposers = this.attachHandlers(object, context);
+    const disposers = [
+      object.on('modified', (e) =>
+        this.performLayout({
+          trigger: 'modified',
+          e: { ...e, target: object },
+          type: LAYOUT_TYPE_OBJECT_MODIFIED,
+          target,
+        })
+      ),
+      ...(
+        [
+          'moving',
+          'resizing',
+          'rotating',
+          'scaling',
+          'skewing',
+          'changed',
+          'modifyPoly',
+        ] as TModificationEvents[]
+      ).map((key) =>
+        object.on(key, (e) =>
+          this.performLayout({
+            trigger: key,
+            e: { ...e, target: object },
+            type: LAYOUT_TYPE_OBJECT_MODIFYING,
+            target,
+          })
+        )
+      ),
+    ];
     this._subscriptions.set(object, disposers);
   }
 
   /**
    * unsubscribe object layout triggers
    */
-  protected unsubscribe(
-    object: FabricObject,
-    context?: RegistrationContext & Partial<StrictLayoutContext>
-  ) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected unsubscribe(object: FabricObject, context?: StrictLayoutContext) {
     (this._subscriptions.get(object) || []).forEach((d) => d());
     this._subscriptions.delete(object);
   }
 
-  unsubscribeTargets(
-    context: RegistrationContext & Partial<StrictLayoutContext>
-  ) {
-    context.targets.forEach((object) => this.unsubscribe(object, context));
-  }
-
-  subscribeTargets(
-    context: RegistrationContext & Partial<StrictLayoutContext>
-  ) {
-    context.targets.forEach((object) => this.subscribe(object, context));
+  unsubscribeTarget(target: Group) {
+    target.forEachObject((object) => this.unsubscribe(object));
   }
 
   protected onBeforeLayout(context: StrictLayoutContext) {
-    const { target, type } = context;
+    const { target } = context;
     const { canvas } = target;
     // handle layout triggers subscription
-    // @TODO: gate the registration when the group is interactive
-    if (type === LAYOUT_TYPE_INITIALIZATION || type === LAYOUT_TYPE_ADDED) {
-      this.subscribeTargets(context);
-    } else if (type === LAYOUT_TYPE_REMOVED) {
-      this.unsubscribeTargets(context);
+    if (
+      context.type === LAYOUT_TYPE_INITIALIZATION ||
+      context.type === LAYOUT_TYPE_ADDED
+    ) {
+      context.targets.forEach((object) => this.subscribe(object, context));
+    } else if (context.type === LAYOUT_TYPE_REMOVED) {
+      context.targets.forEach((object) => this.unsubscribe(object, context));
     }
     // fire layout event (event will fire only for layouts after initialization layout)
     target.fire('layout:before', {
@@ -166,18 +130,16 @@ export class LayoutManager {
         context,
       });
 
-    if (type === LAYOUT_TYPE_IMPERATIVE && context.deep) {
+    if (context.type === LAYOUT_TYPE_IMPERATIVE && context.deep) {
       const { strategy: _, ...tricklingContext } = context;
       // traverse the tree
-      target.forEachObject(
-        (object) =>
-          (object as Group).layoutManager &&
-          (object as Group).layoutManager.performLayout({
-            ...tricklingContext,
-            bubbles: false,
-            target: object as Group,
-          })
-      );
+      target.forEachObject((object) => {
+        (object as Group).layoutManager?.performLayout({
+          ...tricklingContext,
+          bubbles: false,
+          target: object as Group,
+        });
+      });
     }
   }
 
@@ -251,7 +213,7 @@ export class LayoutManager {
       target.setPositionByOrigin(nextCenter, CENTER, CENTER);
       // invalidate
       target.setCoords();
-      target.set('dirty', true);
+      target.set({ dirty: true });
     }
   }
 
@@ -279,9 +241,6 @@ export class LayoutManager {
     { offset }: Required<LayoutResult>,
     object: FabricObject
   ) {
-    // TODO: this is here for cache invalidation.
-    // verify if this is necessary since we have explicit
-    // cache invalidation at the end of commitLayout
     object.set({
       left: object.left + offset.x,
       top: object.top + offset.y,
@@ -314,7 +273,7 @@ export class LayoutManager {
       });
 
     //  bubble
-    const parent = target.parent;
+    const parent = target.group;
     if (bubbles && parent?.layoutManager) {
       //  add target to context#path
       (bubblingContext.path || (bubblingContext.path = [])).push(target);
@@ -324,7 +283,6 @@ export class LayoutManager {
         target: parent,
       });
     }
-    target.set('dirty', true);
   }
 
   dispose() {

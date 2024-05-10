@@ -1,10 +1,12 @@
 import { Color } from '../color/Color';
 import type { Point } from '../Point';
 import type { Shadow } from '../Shadow';
-import type { Canvas } from '../canvas/Canvas';
+import type { Canvas as FabricCanvas } from '../canvas/Canvas';
 import type { TBrushEventData } from './typedefs';
+type CanvasLineJoin = "bevel" | "miter" | "round";
+type CanvasLineCap = "butt" | "round" | "square";
 
-/**
+/*
  * @see {@link http://fabricjs.com/freedrawing|Freedrawing demo}
  */
 export abstract class BaseBrush {
@@ -70,9 +72,9 @@ export abstract class BaseBrush {
   /**
    * @todo add type
    */
-  declare canvas: Canvas;
+  declare canvas: FabricCanvas;
 
-  constructor(canvas: Canvas) {
+  constructor(canvas: FabricCanvas) {
     this.canvas = canvas;
   }
 

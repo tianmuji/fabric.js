@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { GradientType, GradientUnits } from '../typedefs';
 
 export function parseType(el: SVGGradientElement): GradientType {

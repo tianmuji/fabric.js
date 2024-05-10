@@ -10,6 +10,7 @@ export const fireEvent = (
   const {
     transform: { target },
   } = options;
+  //@ts-ignore
   target.canvas?.fire(`object:${eventName}`, {
     ...options,
     target,

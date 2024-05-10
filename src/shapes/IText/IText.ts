@@ -1,4 +1,4 @@
-import { Canvas } from '../../canvas/Canvas';
+import { Canvas as FabricCanvas } from '../../canvas/Canvas';
 import type { ITextEvents } from './ITextBehavior';
 import { ITextClickBehavior } from './ITextClickBehavior';
 import {
@@ -7,7 +7,7 @@ import {
   keysMap,
   keysMapRtl,
 } from './constants';
-import type { TClassProperties, TFiller, TOptions } from '../../typedefs';
+import type { TFiller, TOptions } from '../../typedefs';
 import { classRegistry } from '../../ClassRegistry';
 import type { SerializedTextProps, TextProps } from '../Text/Text';
 import {
@@ -17,7 +17,6 @@ import {
   JUSTIFY_RIGHT,
 } from '../Text/constants';
 import { CENTER, LEFT, RIGHT } from '../../constants';
-import type { ObjectToCanvasElementOptions } from '../Object/Object';
 
 type CursorBoundaries = {
   left: number;
@@ -26,14 +25,7 @@ type CursorBoundaries = {
   topOffset: number;
 };
 
-// Declare IText protected properties to workaround TS
-const protectedDefaultValues = {
-  _selectionDirection: null,
-  _reSpace: /\s|\r?\n/,
-  inCompositionMode: false,
-};
-
-export const iTextDefaultValues: Partial<TClassProperties<IText>> = {
+export const iTextDefaultValues = {
   selectionStart: 0,
   selectionEnd: 0,
   selectionColor: 'rgba(17,119,255,0.3)',
@@ -46,11 +38,13 @@ export const iTextDefaultValues: Partial<TClassProperties<IText>> = {
   cursorDuration: 600,
   caching: true,
   hiddenTextareaContainer: null,
+  _selectionDirection: null,
+  _reSpace: /\s|\r?\n/,
+  inCompositionMode: false,
   keysMap,
   keysMapRtl,
   ctrlKeysMapDown,
   ctrlKeysMapUp,
-  ...protectedDefaultValues,
 };
 
 // @TODO this is not complete
@@ -202,9 +196,9 @@ export class IText<
    */
   declare caching: boolean;
 
-  static ownDefaults = iTextDefaultValues;
+  static ownDefaults: Record<string, any> = iTextDefaultValues;
 
-  static getDefaults(): Record<string, any> {
+  static getDefaults() {
     return { ...super.getDefaults(), ...IText.ownDefaults };
   }
 
@@ -222,8 +216,8 @@ export class IText<
    * @param {String} text Text string
    * @param {Object} [options] Options object
    */
-  constructor(text: string, options?: Props) {
-    super(text, options);
+  constructor(text: string, ctx: CanvasRenderingContext2D, options?: Props) {
+    super(text, ctx, options);
     this.initBehavior();
   }
 
@@ -235,14 +229,13 @@ export class IText<
    */
   _set(key: string, value: any) {
     if (this.isEditing && this._savedProps && key in this._savedProps) {
-      // @ts-expect-error irritating TS
       this._savedProps[key] = value;
       return this;
     }
     if (key === 'canvas') {
-      this.canvas instanceof Canvas &&
+      this.canvas instanceof FabricCanvas &&
         this.canvas.textEditingManager.remove(this);
-      value instanceof Canvas && value.textEditingManager.add(this);
+      value instanceof FabricCanvas && value.textEditingManager.add(this);
     }
     return super._set(key, value);
   }
@@ -360,13 +353,13 @@ export class IText<
    * @override block cursor/selection logic while rendering the exported canvas
    * @todo this workaround should be replaced with a more robust solution
    */
-  toCanvasElement(options?: ObjectToCanvasElementOptions): HTMLCanvasElement {
-    const isEditing = this.isEditing;
-    this.isEditing = false;
-    const canvas = super.toCanvasElement(options);
-    this.isEditing = isEditing;
-    return canvas;
-  }
+  // toCanvasElement(options?: any): CanvasRenderingContext2D {
+  //   const isEditing = this.isEditing;
+  //   this.isEditing = false;
+  //   const canvas = super.toCanvasElement(options);
+  //   this.isEditing = isEditing;
+  //   return canvas;
+  // }
 
   /**
    * Renders cursor or selection (depending on what exists)
@@ -563,8 +556,8 @@ export class IText<
   }
 
   renderDropTargetEffect(e: DragEvent) {
-    const dragSelection = this.getSelectionStartFromPointer(e);
-    this.renderCursorAt(dragSelection);
+    // const dragSelection = this.getSelectionStartFromPointer(e);
+    // this.renderCursorAt(dragSelection);
   }
 
   /**

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { classRegistry } from '../ClassRegistry';
 import { NONE } from '../constants';
 import type {
@@ -37,6 +38,9 @@ const getEventPoints = (canvas: Canvas, e: TPointerEvent) => {
 // just to be clear, the utils are now deprecated and those are here exactly as minifier helpers
 // because el.addEventListener can't me be minified while a const yes and we use it 47 times in this file.
 // few bytes but why give it away.
+
+// todo
+// export these function and call them in ArkUI
 const addListener = (
   el: HTMLElement | Document,
   ...args: Parameters<HTMLElement['addEventListener']>
@@ -76,7 +80,7 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
    * @type Number
    * @private
    */
-  declare mainTouchId?: number;
+  declare mainTouchId: null | number;
 
   declare enablePointerEvents: boolean;
 
@@ -114,8 +118,8 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
 
   textEditingManager = new TextEditingManager(this);
 
-  constructor(el?: string | HTMLCanvasElement, options: TCanvasOptions = {}) {
-    super(el, options);
+  constructor(el: CanvasRenderingContext2D, width: number, height: number, options: TCanvasOptions = {}) {
+    super(el, width, height, options);
     // bind event handlers
     (
       [
@@ -147,8 +151,18 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
       this[eventHandler] = (this[eventHandler] as Function).bind(this);
     });
     // register event handlers
-    this.addOrRemove(addListener, 'add');
+    // this.addOrRemove(addListener, 'add');
   }
+
+  setUpper (ctx: CanvasRenderingContext2D) {
+    super.setUpperCtx(ctx)
+  }
+
+  // hoverCursor: CSSStyleDeclaration;
+  // moveCursor: CSSStyleDeclaration;
+  // defaultCursor: CSSStyleDeclaration;
+  // freeDrawingCursor: CSSStyleDeclaration;
+  // notAllowedCursor: CSSStyleDeclaration;
 
   /**
    * return an event prefix pointer or mouse.
@@ -204,29 +218,29 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
     // if you dispose on a mouseDown, before mouse up, you need to clean document to...
     const eventTypePrefix = this._getEventPrefix();
     const doc = getDocumentFromElement(this.upperCanvasEl);
-    removeListener(
-      doc,
-      `${eventTypePrefix}up`,
-      this._onMouseUp as EventListener
-    );
-    removeListener(
-      doc,
-      'touchend',
-      this._onTouchEnd as EventListener,
-      addEventOptions
-    );
-    removeListener(
-      doc,
-      `${eventTypePrefix}move`,
-      this._onMouseMove as EventListener,
-      addEventOptions
-    );
-    removeListener(
-      doc,
-      'touchmove',
-      this._onMouseMove as EventListener,
-      addEventOptions
-    );
+    // removeListener(
+    //   doc,
+    //   `${eventTypePrefix}up`,
+    //   this._onMouseUp as EventListener
+    // );
+    // removeListener(
+    //   doc,
+    //   'touchend',
+    //   this._onTouchEnd as EventListener,
+    //   addEventOptions
+    // );
+    // removeListener(
+    //   doc,
+    //   `${eventTypePrefix}move`,
+    //   this._onMouseMove as EventListener,
+    //   addEventOptions
+    // );
+    // removeListener(
+    //   doc,
+    //   'touchmove',
+    //   this._onMouseMove as EventListener,
+    //   addEventOptions
+    // );
   }
 
   /**
@@ -291,11 +305,11 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
       const options = { e, target: activeObject };
       this.fire('dragstart', options);
       activeObject.fire('dragstart', options);
-      addListener(
-        this.upperCanvasEl,
-        'drag',
-        this._onDragProgress as EventListener
-      );
+      // addListener(
+      //   this.upperCanvasEl,
+      //   'drag',
+      //   this._onDragProgress as EventListener
+      // );
       return;
     }
     stopEvent(e);
@@ -360,11 +374,11 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
         didDrop,
         dropTarget: dropTarget as FabricObject,
       };
-    removeListener(
-      this.upperCanvasEl,
-      'drag',
-      this._onDragProgress as EventListener
-    );
+    // removeListener(
+    //   this.upperCanvasEl,
+    //   'drag',
+    //   this._onDragProgress as EventListener
+    // );
     this.fire('dragend', options);
     this._dragSource && this._dragSource.fire('dragend', options);
     delete this._dragSource;
@@ -554,7 +568,7 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
    * @private
    * @param {Event} evt Event object
    */
-  getPointerId(evt: TouchEvent | PointerEvent): number {
+  getPointerId(evt: TouchEvent): number {
     const changedTouches = (evt as TouchEvent).changedTouches;
 
     if (changedTouches) {
@@ -597,7 +611,7 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
    */
   _onTouchStart(e: TouchEvent) {
     e.preventDefault();
-    if (this.mainTouchId === undefined) {
+    if (this.mainTouchId === null) {
       this.mainTouchId = this.getPointerId(e);
     }
     this.__onMouseDown(e);
@@ -618,11 +632,80 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
       addEventOptions
     );
     // Unbind mousedown to prevent double triggers from touch devices
-    removeListener(
-      canvasElement,
-      `${eventTypePrefix}down`,
-      this._onMouseDown as EventListener
-    );
+    // removeListener(
+    //   canvasElement,
+    //   `${eventTypePrefix}down`,
+    //   this._onMouseDown as EventListener
+    // );
+  }
+
+  handleMouseMove(event: TouchEvent) {
+    const helper = {
+      timestamp: event.timestamp,
+      target: event.target,
+      source: event.source,
+      x: event.changedTouches[0].x,
+      y: event.changedTouches[0].y,
+      // todo
+      // error in card?
+      windowX: event.changedTouches[0].screenX,
+      windowY: event.changedTouches[0].screenY
+      // stopPropagation: event.stopPropagation
+    }
+    this._onMouseMove(helper)
+  }
+
+  handleMouseDown(event: ClickEvent | TouchEvent) {
+    if (event.touches) {
+      const helper = {
+        timestamp: event.timestamp,
+        target: event.target,
+        source: event.source,
+        x: event.changedTouches[0].x,
+        y: event.changedTouches[0].y,
+        // todo
+        // error in card?
+        windowX: event.changedTouches[0].screenX,
+        windowY: event.changedTouches[0].screenY
+        // stopPropagation: event.stopPropagation
+      }
+      this._onMouseDown(helper)
+    } else {
+      this._onMouseDown(event)
+    }
+
+  }
+
+  handleMouseUp(event: ClickEvent | TouchEvent) {
+    if (event.touches) {
+      const helper = {
+        timestamp: event.timestamp,
+        target: event.target,
+        source: event.source,
+        x: event.changedTouches[0].x,
+        y: event.changedTouches[0].y,
+        // todo
+        // error in card?
+        windowX: event.changedTouches[0].screenX,
+        windowY: event.changedTouches[0].screenY
+        // stopPropagation: event.stopPropagation
+      }
+      this._onMouseUp(helper)
+    } else {
+      this._onMouseUp(event)
+    }
+  }
+
+  handleDragStart(e: TPointerEvent) {
+    this._onDragStart(e)
+  }
+
+  handleDragMove(e: TPointerEvent) {
+    this._onMouseMove(e)
+  }
+
+  handleDragEnd(e: TPointerEvent) {
+    this._onDragEnd(e)
   }
 
   /**
@@ -634,20 +717,20 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
     this._resetTransformEventData();
     const canvasElement = this.upperCanvasEl,
       eventTypePrefix = this._getEventPrefix();
-    removeListener(
-      canvasElement,
-      `${eventTypePrefix}move`,
-      this._onMouseMove as EventListener,
-      addEventOptions
-    );
-    const doc = getDocumentFromElement(canvasElement);
-    addListener(doc, `${eventTypePrefix}up`, this._onMouseUp as EventListener);
-    addListener(
-      doc,
-      `${eventTypePrefix}move`,
-      this._onMouseMove as EventListener,
-      addEventOptions
-    );
+    // removeListener(
+    //   canvasElement,
+    //   `${eventTypePrefix}move`,
+    //   this._onMouseMove as EventListener,
+    //   addEventOptions
+    // );
+    // const doc = getDocumentFromElement(canvasElement);
+    // addListener(doc, `${eventTypePrefix}up`, this._onMouseUp as EventListener);
+    // addListener(
+    //   doc,
+    //   `${eventTypePrefix}move`,
+    //   this._onMouseMove as EventListener,
+    //   addEventOptions
+    // );
   }
 
   /**
@@ -661,21 +744,21 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
     }
     this.__onMouseUp(e);
     this._resetTransformEventData();
-    delete this.mainTouchId;
+    this.mainTouchId = null;
     const eventTypePrefix = this._getEventPrefix();
     const doc = getDocumentFromElement(this.upperCanvasEl);
-    removeListener(
-      doc,
-      'touchend',
-      this._onTouchEnd as EventListener,
-      addEventOptions
-    );
-    removeListener(
-      doc,
-      'touchmove',
-      this._onMouseMove as EventListener,
-      addEventOptions
-    );
+    // removeListener(
+    //   doc,
+    //   'touchend',
+    //   this._onTouchEnd as EventListener,
+    //   addEventOptions
+    // );
+    // removeListener(
+    //   doc,
+    //   'touchmove',
+    //   this._onMouseMove as EventListener,
+    //   addEventOptions
+    // );
     if (this._willAddMouseDown) {
       clearTimeout(this._willAddMouseDown);
     }
@@ -700,26 +783,26 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
     this._resetTransformEventData();
     const canvasElement = this.upperCanvasEl,
       eventTypePrefix = this._getEventPrefix();
-    if (this._isMainEvent(e)) {
-      const doc = getDocumentFromElement(this.upperCanvasEl);
-      removeListener(
-        doc,
-        `${eventTypePrefix}up`,
-        this._onMouseUp as EventListener
-      );
-      removeListener(
-        doc,
-        `${eventTypePrefix}move`,
-        this._onMouseMove as EventListener,
-        addEventOptions
-      );
-      addListener(
-        canvasElement,
-        `${eventTypePrefix}move`,
-        this._onMouseMove as EventListener,
-        addEventOptions
-      );
-    }
+    // if (this._isMainEvent(e)) {
+    //   const doc = getDocumentFromElement(this.upperCanvasEl);
+    //   removeListener(
+    //     doc,
+    //     `${eventTypePrefix}up`,
+    //     this._onMouseUp as EventListener
+    //   );
+    //   removeListener(
+    //     doc,
+    //     `${eventTypePrefix}move`,
+    //     this._onMouseMove as EventListener,
+    //     addEventOptions
+    //   );
+    //   addListener(
+    //     canvasElement,
+    //     `${eventTypePrefix}move`,
+    //     this._onMouseMove as EventListener,
+    //     addEventOptions
+    //   );
+    // }
   }
 
   /**
@@ -732,7 +815,7 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
       (!activeObject ||
         // a drag event sequence is started by the active object flagging itself on mousedown / mousedown:before
         // we must not prevent the event's default behavior in order for the window to start dragging
-        !activeObject.shouldStartDragging(e)) &&
+        !activeObject.shouldStartDragging()) &&
       e.preventDefault &&
       e.preventDefault();
     this.__onMouseMove(e);
@@ -812,12 +895,10 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
     }
     let pointer, corner;
     if (target) {
-      const found = target.findControl(
+      corner = target._findTargetCorner(
         this.getViewportPoint(e),
         isTouchEvent(e)
       );
-      const { key, control } = found || {};
-      corner = key;
       if (
         target.selectable &&
         target !== this._activeObject &&
@@ -825,8 +906,10 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
       ) {
         this.setActiveObject(target, e);
         shouldRender = true;
-      } else if (control) {
-        const mouseUpHandler = control.getMouseUpHandler(e, target, control);
+      } else {
+        const control = target.controls[corner];
+        const mouseUpHandler =
+          control && control.getMouseUpHandler(e, target, control);
         if (mouseUpHandler) {
           pointer = this.getScenePoint(e);
           mouseUpHandler.call(control, e, transform!, pointer.x, pointer.y);
@@ -866,6 +949,7 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
     // reset the target information about which corner is selected
     target && (target.__corner = undefined);
     if (shouldRender) {
+      console.log('shoulder')
       this.requestRenderAll();
     } else if (!isClick && !(this._activeObject as IText)?.isEditing) {
       this.renderTop();
@@ -997,7 +1081,6 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
       this._resetTransformEventData();
       return;
     }
-
     if (this.isDrawingMode) {
       this._onMouseDownInDrawingMode(e);
       return;
@@ -1006,7 +1089,6 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
     if (!this._isMainEvent(e)) {
       return;
     }
-
     // ignore if some object is being transformed at this moment
     if (this._currentTransform) {
       return;
@@ -1049,13 +1131,13 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
       if (target.selectable && target.activeOn === 'down') {
         this.setActiveObject(target, e);
       }
-      const handle = target.findControl(
+      const corner = target._findTargetCorner(
         this.getViewportPoint(e),
         isTouchEvent(e)
       );
-      if (target === this._activeObject && (handle || !grouped)) {
+      if (target === this._activeObject && (corner || !grouped)) {
         this._setupCurrentTransform(e, target, alreadySelected);
-        const control = handle ? handle.control : undefined,
+        const control = target.controls[corner],
           pointer = this.getScenePoint(e),
           mouseDownHandler =
             control && control.getMouseDownHandler(e, target, control);
@@ -1117,8 +1199,8 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
    */
   __onMouseMove(e: TPointerEvent) {
     this._isClick = false;
-    this._cacheTransformEventData(e);
     this._handleEvent(e, 'move:before');
+    this._cacheTransformEventData(e);
 
     if (this.isDrawingMode) {
       this._onMouseMoveInDrawingMode(e);
@@ -1342,7 +1424,7 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
         // here we call findTargetCorner always with undefined for the touch parameter.
         // we assume that if you are using a cursor you do not need to interact with
         // the bigger touch area.
-        target.findControl(this.getViewportPoint(e));
+        target._findTargetCorner(this.getViewportPoint(e));
 
     if (!corner) {
       if ((target as Group).subTargetCheck) {
@@ -1357,7 +1439,7 @@ export class Canvas extends SelectableCanvas implements CanvasOptions {
       }
       this.setCursor(hoverCursor);
     } else {
-      const control = corner.control;
+      const control = target.controls[corner];
       this.setCursor(control.cursorStyleHandler(e, control, target));
     }
   }

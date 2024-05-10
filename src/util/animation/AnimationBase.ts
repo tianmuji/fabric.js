@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { noop } from '../../constants';
 import { requestAnimFrame } from './AnimationFrameProvider';
 import { runningAnimations } from './AnimationRegistry';

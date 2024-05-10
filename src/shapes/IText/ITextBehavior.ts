@@ -55,7 +55,7 @@ export abstract class ITextBehavior<
   declare abstract compositionStart: number;
   declare abstract compositionEnd: number;
 
-  declare abstract hiddenTextarea: HTMLTextAreaElement | null;
+  declare abstract hiddenTextarea: null | any;
 
   /**
    * Helps determining when the text is in composition, so that the cursor
@@ -78,9 +78,9 @@ export abstract class ITextBehavior<
     lockMovementX: boolean;
     lockMovementY: boolean;
     selectable: boolean;
-    hoverCursor: CSSStyleDeclaration['cursor'] | null;
-    defaultCursor?: CSSStyleDeclaration['cursor'];
-    moveCursor?: CSSStyleDeclaration['cursor'];
+    hoverCursor: string | null;
+    defaultCursor?: string;
+    moveCursor?: string;
   };
   protected declare _selectionDirection: 'left' | 'right' | null;
 
@@ -134,10 +134,13 @@ export abstract class ITextBehavior<
       duration,
       delay,
       onComplete,
-      abort: () =>
-        !this.canvas ||
-        // we do not want to animate a selection, only cursor
-        this.selectionStart !== this.selectionEnd,
+      abort: () => {
+        return (
+          !this.canvas ||
+          // we do not want to animate a selection, only cursor
+          this.selectionStart !== this.selectionEnd
+        );
+      },
       onChange: (value) => {
         this._currentCursorOpacity = value;
         this.renderCursorOrSelection();
@@ -145,26 +148,21 @@ export abstract class ITextBehavior<
     });
   }
 
-  /**
-   * changes the cursor from visible to invisible
-   */
   private _tick(delay?: number) {
     this._currentTickState = this._animateCursor({
-      toValue: 0,
-      duration: this.cursorDuration / 2,
-      delay: Math.max(delay || 0, 100),
+      toValue: 1,
+      duration: this.cursorDuration,
+      delay,
       onComplete: this._onTickComplete,
     });
   }
 
-  /**
-   * Changes the cursor from invisible to visible
-   */
   private _onTickComplete() {
     this._currentTickCompleteState?.abort();
     this._currentTickCompleteState = this._animateCursor({
-      toValue: 1,
-      duration: this.cursorDuration,
+      toValue: 0,
+      duration: this.cursorDuration / 2,
+      delay: 100,
       onComplete: this._tick,
     });
   }
@@ -199,10 +197,6 @@ export abstract class ITextBehavior<
     }
   }
 
-  /**
-   * Restart tue cursor animation if either is in complete state ( between animations )
-   * or if it never started before
-   */
   restartCursorIfNeeded() {
     if (
       [this._currentTickState, this._currentTickCompleteState].some(
@@ -342,11 +336,10 @@ export abstract class ITextBehavior<
   }
 
   /**
-   * TODO fix: selectionStart set as 0 will be ignored?
    * Selects a word based on the index
    * @param {Number} selectionStart Index of a character
    */
-  selectWord(selectionStart?: number) {
+  selectWord(selectionStart: number) {
     selectionStart = selectionStart || this.selectionStart;
     // search backwards
     const newSelectionStart = this.searchWordBoundary(selectionStart, -1),
@@ -364,11 +357,10 @@ export abstract class ITextBehavior<
   }
 
   /**
-   * TODO fix: selectionStart set as 0 will be ignored?
    * Selects a line based on the index
    * @param {Number} selectionStart Index of a character
    */
-  selectLine(selectionStart?: number) {
+  selectLine(selectionStart: number) {
     selectionStart = selectionStart || this.selectionStart;
     const newSelectionStart = this.findLineBoundaryLeft(selectionStart),
       newSelectionEnd = this.findLineBoundaryRight(selectionStart);
@@ -394,9 +386,9 @@ export abstract class ITextBehavior<
 
     this.isEditing = true;
 
-    this.initHiddenTextarea();
-    this.hiddenTextarea!.focus();
-    this.hiddenTextarea!.value = this.text;
+    // this.initHiddenTextarea();
+    // this.hiddenTextarea!.focus();
+    // this.hiddenTextarea!.value = this.text;
     this._updateTextarea();
     this._saveEditingProps();
     this._setEditingProps();
@@ -422,7 +414,7 @@ export abstract class ITextBehavior<
 
     const el = this.hiddenTextarea!;
     // regain focus
-    getDocumentFromElement(el).activeElement !== el && el.focus();
+    // getDocumentFromElement(el).activeElement !== el && el.focus();
 
     const newSelectionStart = this.getSelectionStartFromPointer(e),
       currentStart = this.selectionStart,
@@ -518,7 +510,9 @@ export abstract class ITextBehavior<
         this.selectionEnd,
         this._text
       );
+      // @ts-ignore
       this.hiddenTextarea.selectionStart = newSelection.selectionStart;
+      // @ts-ignore
       this.hiddenTextarea.selectionEnd = newSelection.selectionEnd;
     }
     this.updateTextareaPosition();
@@ -528,25 +522,25 @@ export abstract class ITextBehavior<
    * @private
    */
   updateFromTextArea() {
-    if (!this.hiddenTextarea) {
-      return;
-    }
-    this.cursorOffsetCache = {};
-    const textarea = this.hiddenTextarea;
-    this.text = textarea.value;
-    this.set('dirty', true);
-    this.initDimensions();
-    this.setCoords();
-    const newSelection = this.fromStringToGraphemeSelection(
-      textarea.selectionStart,
-      textarea.selectionEnd,
-      textarea.value
-    );
-    this.selectionEnd = this.selectionStart = newSelection.selectionEnd;
-    if (!this.inCompositionMode) {
-      this.selectionStart = newSelection.selectionStart;
-    }
-    this.updateTextareaPosition();
+    // if (!this.hiddenTextarea) {
+    //   return;
+    // }
+    // this.cursorOffsetCache = {};
+    // const textarea = this.hiddenTextarea;
+    // this.text = textarea.value;
+    // this.set('dirty', true);
+    // this.initDimensions();
+    // this.setCoords();
+    // const newSelection = this.fromStringToGraphemeSelection(
+    //   textarea.selectionStart,
+    //   textarea.selectionEnd,
+    //   textarea.value
+    // );
+    // this.selectionEnd = this.selectionStart = newSelection.selectionEnd;
+    // if (!this.inCompositionMode) {
+    //   this.selectionStart = newSelection.selectionStart;
+    // }
+    // this.updateTextareaPosition();
   }
 
   /**
@@ -594,8 +588,8 @@ export abstract class ITextBehavior<
       .transform(this.canvas.viewportTransform)
       .multiply(
         new Point(
-          upperCanvas.clientWidth / upperCanvasWidth,
-          upperCanvas.clientHeight / upperCanvasHeight
+          this.width / upperCanvasWidth,
+          this.height / upperCanvasHeight
         )
       );
 

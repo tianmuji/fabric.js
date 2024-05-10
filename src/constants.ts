@@ -1,8 +1,9 @@
 import type { TMat2D } from './typedefs';
 // use this syntax so babel plugin see this import here
-import { version } from '../package.json';
+// import { version } from '../../../../../Documents/fabric.js-master/package.json';
 
-export const VERSION = version;
+// where to import version?
+export const VERSION = '1.0.0';
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 export function noop() {}
 

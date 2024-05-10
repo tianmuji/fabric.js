@@ -1,7 +1,4 @@
 import { TOP, LEFT } from '../../constants';
-import type { TClassProperties } from '../../typedefs';
-import type { InteractiveFabricObject } from './InteractiveObject';
-import type { FabricObject } from './Object';
 
 export const stateProperties = [
   TOP,
@@ -38,9 +35,7 @@ export const cacheProperties = [
   'clipPath',
 ];
 
-export const fabricObjectDefaultValues: Partial<
-  TClassProperties<FabricObject>
-> = {
+export const fabricObjectDefaultValues = {
   // see composeMatrix() to see order of transforms. First defaults listed based on this
   top: 0,
   left: 0,
@@ -84,9 +79,7 @@ export const fabricObjectDefaultValues: Partial<
   dirty: true,
 } as const;
 
-export const interactiveObjectDefaultValues: Partial<
-  TClassProperties<InteractiveFabricObject>
-> = {
+export const interactiveObjectDefaultValues = {
   noScaleCache: true,
   lockMovementX: false,
   lockMovementY: false,

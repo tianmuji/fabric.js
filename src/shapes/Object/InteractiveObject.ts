@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Point, ZERO } from '../../Point';
 import type { TCornerPoint, TDegree } from '../../typedefs';
 import { FabricObject } from './Object';
@@ -13,7 +14,7 @@ import {
 import type { Control } from '../../controls/Control';
 import { sizeAfterTransform } from '../../util/misc/objectTransforms';
 import type { ObjectEvents, TPointerEvent } from '../../EventTypeDefs';
-import type { Canvas } from '../../canvas/Canvas';
+import type { Canvas as FabricCanvas } from '../../canvas/Canvas';
 import type { ControlRenderingStyleOverride } from '../../controls/controlRendering';
 import type { FabricObjectProps } from './types/FabricObjectProps';
 import type { TFabricObjectProps, SerializedObjectProps } from './types';
@@ -51,7 +52,6 @@ export class InteractiveFabricObject<
 
   declare snapAngle?: TDegree;
   declare snapThreshold?: TDegree;
-
   declare lockMovementX: boolean;
   declare lockMovementY: boolean;
   declare lockRotation: boolean;
@@ -82,8 +82,8 @@ export class InteractiveFabricObject<
   declare perPixelTargetFind: boolean;
   declare activeOn: 'down' | 'up';
 
-  declare hoverCursor: CSSStyleDeclaration['cursor'] | null;
-  declare moveCursor: CSSStyleDeclaration['cursor'] | null;
+  declare hoverCursor: string | null;
+  declare moveCursor: string | null;
 
   /**
    * The object's controls' position in viewport coordinates
@@ -132,9 +132,9 @@ export class InteractiveFabricObject<
    */
   declare _scaling?: boolean;
 
-  declare canvas?: Canvas;
+  declare canvas?: FabricCanvas;
 
-  static ownDefaults = interactiveObjectDefaultValues;
+  static ownDefaults: Record<string, any> = interactiveObjectDefaultValues;
 
   static getDefaults(): Record<string, any> {
     return {
@@ -189,22 +189,17 @@ export class InteractiveFabricObject<
    * @param {boolean} forTouch indicates if we are looking for interaction area with a touch action
    * @return {String|Boolean} corner code (tl, tr, bl, br, etc.), or 0 if nothing is found.
    */
-  findControl(
-    pointer: Point,
-    forTouch = false
-  ): { key: string; control: Control; coord: TOCoord } | undefined {
+  _findTargetCorner(pointer: Point, forTouch = false): string {
     if (!this.hasControls || !this.canvas) {
-      return undefined;
+      return '';
     }
 
     this.__corner = undefined;
     const cornerEntries = Object.entries(this.oCoords);
     for (let i = cornerEntries.length - 1; i >= 0; i--) {
       const [key, corner] = cornerEntries[i];
-      const control = this.controls[key];
-
       if (
-        control.shouldActivate(
+        this.controls[key].shouldActivate(
           key,
           this,
           pointer,
@@ -212,13 +207,11 @@ export class InteractiveFabricObject<
         )
       ) {
         // this.canvas.contextTop.fillRect(pointer.x - 1, pointer.y - 1, 2, 2);
-        this.__corner = key;
-
-        return { key, control, coord: this.oCoords[key] };
+        return (this.__corner = key);
       }
     }
 
-    return undefined;
+    return '';
   }
 
   /**
@@ -247,13 +240,8 @@ export class InteractiveFabricObject<
       ]),
       transformOptions = this.group
         ? qrDecompose(this.calcTransformMatrix())
-        : undefined;
-    // decomposing could bring negative scaling and `_calculateCurrentDimensions` can't take it
-    if (transformOptions) {
-      transformOptions.scaleX = Math.abs(transformOptions.scaleX);
-      transformOptions.scaleY = Math.abs(transformOptions.scaleY);
-    }
-    const dim = this._calculateCurrentDimensions(transformOptions),
+        : undefined,
+      dim = this._calculateCurrentDimensions(transformOptions),
       coords: Record<string, TOCoord> = {};
 
     this.forEachControl((control, key) => {
@@ -426,12 +414,7 @@ export class InteractiveFabricObject<
     ctx.save();
     ctx.translate(options.translateX, options.translateY);
     ctx.lineWidth = 1 * this.borderScaleFactor;
-    // since interactive groups have been introduced, an object could be inside a group and needing controls
-    // the following equality check `this.group === this.parent` covers:
-    // object without a group ( undefined === undefined )
-    // object inside a group
-    // excludes object inside a group but multi selected since group and parent will differ in value
-    if (this.group === this.parent) {
+    if (!this.group) {
       ctx.globalAlpha = this.isMoving ? this.borderOpacityWhenMoving : 1;
     }
     if (this.flipX) {
@@ -653,7 +636,7 @@ export class InteractiveFabricObject<
    * Fired from {@link Canvas#_onMouseMove}
    * @returns true in order for the window to start a drag session
    */
-  shouldStartDragging(e: TPointerEvent) {
+  shouldStartDragging() {
     return false;
   }
 

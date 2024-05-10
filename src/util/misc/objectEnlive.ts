@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { noop } from '../../constants';
 import type { Pattern } from '../../Pattern';
 import type { FabricObject } from '../../shapes/Object/FabricObject';
@@ -12,7 +13,7 @@ import { classRegistry } from '../../ClassRegistry';
 import type { BaseFilter } from '../../filters/BaseFilter';
 import type { FabricObject as BaseFabricObject } from '../../shapes/Object/Object';
 import { FabricError, SignalAbortedError } from '../internals/console';
-import type { Shadow } from '../../Shadow';
+import type { Gradient } from '../../gradient';
 
 export type LoadImageOptions = Abortable & {
   /**
@@ -67,9 +68,7 @@ export type EnlivenObjectOptions = Abortable & {
    * Method for further parsing of object elements,
    * called after each fabric object created.
    */
-  reviver?: <
-    T extends BaseFabricObject | FabricObject | BaseFilter | Shadow | TFiller
-  >(
+  reviver?: <T extends BaseFabricObject | FabricObject | BaseFilter>(
     serializedObj: Record<string, any>,
     instance: T
   ) => void;
@@ -85,7 +84,7 @@ export type EnlivenObjectOptions = Abortable & {
  * @returns {Promise<FabricObject[]>}
  */
 export const enlivenObjects = <
-  T extends BaseFabricObject | FabricObject | BaseFilter | Shadow | TFiller
+  T extends BaseFabricObject | FabricObject | BaseFilter
 >(
   objects: any[],
   { signal, reviver = noop }: EnlivenObjectOptions = {}
@@ -137,21 +136,25 @@ export const enlivenObjectEnlivables = <
   { signal }: Abortable = {}
 ) =>
   new Promise<R>((resolve, reject) => {
-    const instances: (FabricObject | TFiller | Shadow)[] = [];
+    const instances: (FabricObject | TFiller)[] = [];
     signal && signal.addEventListener('abort', reject, { once: true });
     // enlive every possible property
     const promises = Object.values(serializedObject).map((value: any) => {
       if (!value) {
         return value;
       }
-      // clipPath or shadow or gradient
+      // gradient
+      if (value.colorStops) {
+        return new (classRegistry.getClass<typeof Gradient>('gradient'))(value);
+      }
+      // clipPath
       if (value.type) {
-        return enlivenObjects<FabricObject | Shadow | TFiller>([value], {
-          signal,
-        }).then(([enlived]) => {
-          instances.push(enlived);
-          return enlived;
-        });
+        return enlivenObjects<FabricObject>([value], { signal }).then(
+          ([enlived]) => {
+            instances.push(enlived);
+            return enlived;
+          }
+        );
       }
       // pattern
       if (value.source) {

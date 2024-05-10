@@ -5,7 +5,10 @@ import { PencilBrush } from './PencilBrush';
 import type { TSimplePathData } from '../util/path/typedefs';
 
 export class PatternBrush extends PencilBrush {
-  declare source?: CanvasImageSource;
+  // declare source?: CanvasImageSource;
+  //
+  // @ts-ignore
+  declare source?: CanvasRenderingContext2D;
 
   constructor(canvas: Canvas) {
     super(canvas);

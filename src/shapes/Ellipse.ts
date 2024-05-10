@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { twoMathPi } from '../constants';
 import { SHARED_ATTRIBUTES } from '../parser/attributes';
 import { parseAttributes } from '../parser/parseAttributes';
@@ -8,7 +9,7 @@ import type { FabricObjectProps, SerializedObjectProps } from './Object/types';
 import type { ObjectEvents } from '../EventTypeDefs';
 import type { CSSRules } from '../parser/typedefs';
 
-export const ellipseDefaultValues: Partial<TClassProperties<Ellipse>> = {
+export const ellipseDefaultValues: UniqueEllipseProps = {
   rx: 0,
   ry: 0,
 };
@@ -52,9 +53,9 @@ export class Ellipse<
 
   static cacheProperties = [...cacheProperties, ...ELLIPSE_PROPS];
 
-  static ownDefaults = ellipseDefaultValues;
+  static ownDefaults: Record<string, any> = ellipseDefaultValues;
 
-  static getDefaults(): Record<string, any> {
+  static getDefaults() {
     return {
       ...super.getDefaults(),
       ...Ellipse.ownDefaults,
@@ -154,21 +155,21 @@ export class Ellipse<
    * @param {HTMLElement} element Element to parse
    * @return {Ellipse}
    */
-  static async fromElement(
-    element: HTMLElement,
-    options: Abortable,
-    cssRules?: CSSRules
-  ) {
-    const parsedAttributes = parseAttributes(
-      element,
-      this.ATTRIBUTE_NAMES,
-      cssRules
-    );
-
-    parsedAttributes.left = (parsedAttributes.left || 0) - parsedAttributes.rx;
-    parsedAttributes.top = (parsedAttributes.top || 0) - parsedAttributes.ry;
-    return new this(parsedAttributes);
-  }
+  // static async fromElement(
+  //   element: HTMLElement,
+  //   options: Abortable,
+  //   cssRules?: CSSRules
+  // ) {
+  //   const parsedAttributes = parseAttributes(
+  //     element,
+  //     this.ATTRIBUTE_NAMES,
+  //     cssRules
+  //   );
+  //
+  //   parsedAttributes.left = (parsedAttributes.left || 0) - parsedAttributes.rx;
+  //   parsedAttributes.top = (parsedAttributes.top || 0) - parsedAttributes.ry;
+  //   return new this(parsedAttributes);
+  // }
 
   /* _FROM_SVG_END_ */
 }

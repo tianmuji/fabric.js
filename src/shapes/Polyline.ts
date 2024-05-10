@@ -1,10 +1,10 @@
 import { config } from '../config';
 import { SHARED_ATTRIBUTES } from '../parser/attributes';
-import { parseAttributes } from '../parser/parseAttributes';
-import { parsePointsAttribute } from '../parser/parsePointsAttribute';
+// import { parseAttributes } from '../parser/parseAttributes';
+// import { parsePointsAttribute } from '../parser/parsePointsAttribute';
 import type { XY } from '../Point';
 import { Point } from '../Point';
-import type { Abortable, TClassProperties, TOptions } from '../typedefs';
+import type { Abortable, TClassProperties, TMat2D, TOptions } from '../typedefs';
 import { classRegistry } from '../ClassRegistry';
 import { makeBoundingBoxFromPoints } from '../util/misc/boundingBoxFromPoints';
 import { calcDimensionsMatrix, transformPoint } from '../util/misc/matrix';
@@ -17,7 +17,7 @@ import type { FabricObjectProps, SerializedObjectProps } from './Object/types';
 import type { ObjectEvents } from '../EventTypeDefs';
 import { cloneDeep } from '../util/internals/cloneDeep';
 import { CENTER, LEFT, TOP } from '../constants';
-import type { CSSRules } from '../parser/typedefs';
+// import type { CSSRules } from '../parser/typedefs';
 
 export const polylineDefaultValues: Partial<TClassProperties<Polyline>> = {
   /**
@@ -55,11 +55,11 @@ export class Polyline<
 
   private declare initialized: true | undefined;
 
-  static ownDefaults = polylineDefaultValues;
+  static ownDefaults: Record<string, any> = polylineDefaultValues;
 
   static type = 'Polyline';
 
-  static getDefaults(): Record<string, any> {
+  static getDefaults() {
     return {
       ...super.getDefaults(),
       ...Polyline.ownDefaults,
@@ -161,7 +161,7 @@ export class Polyline<
       // Remove scale effect, since it's applied after
       matrix = calcDimensionsMatrix({ ...options, scaleX: 1, scaleY: 1 }),
       bboxNoStroke = makeBoundingBoxFromPoints(
-        this.points.map((p) => transformPoint(p, matrix, true))
+        this.points.map((p) => transformPoint(p, matrix as TMat2D, true))
       ),
       scale = new Point(this.scaleX, this.scaleY);
     let offsetX = bbox.left + bbox.width / 2,
@@ -312,30 +312,30 @@ export class Polyline<
    * @return {Array} an array of strings with the specific svg representation
    * of the instance
    */
-  _toSVG() {
-    const points = [],
-      diffX = this.pathOffset.x,
-      diffY = this.pathOffset.y,
-      NUM_FRACTION_DIGITS = config.NUM_FRACTION_DIGITS;
-
-    for (let i = 0, len = this.points.length; i < len; i++) {
-      points.push(
-        toFixed(this.points[i].x - diffX, NUM_FRACTION_DIGITS),
-        ',',
-        toFixed(this.points[i].y - diffY, NUM_FRACTION_DIGITS),
-        ' '
-      );
-    }
-    return [
-      `<${
-        (this.constructor as typeof Polyline).type.toLowerCase() as
-          | 'polyline'
-          | 'polygon'
-      } `,
-      'COMMON_PARTS',
-      `points="${points.join('')}" />\n`,
-    ];
-  }
+  // _toSVG() {
+  //   const points = [],
+  //     diffX = this.pathOffset.x,
+  //     diffY = this.pathOffset.y,
+  //     NUM_FRACTION_DIGITS = config.NUM_FRACTION_DIGITS;
+  //
+  //   for (let i = 0, len = this.points.length; i < len; i++) {
+  //     points.push(
+  //       toFixed(this.points[i].x - diffX, NUM_FRACTION_DIGITS),
+  //       ',',
+  //       toFixed(this.points[i].y - diffY, NUM_FRACTION_DIGITS),
+  //       ' '
+  //     );
+  //   }
+  //   return [
+  //     `<${
+  //       (this.constructor as typeof Polyline).type.toLowerCase() as
+  //         | 'polyline'
+  //         | 'polygon'
+  //     } `,
+  //     'COMMON_PARTS',
+  //     `points="${points.join('')}" />\n`,
+  //   ];
+  // }
 
   /**
    * @private
@@ -386,24 +386,24 @@ export class Polyline<
    * @param {HTMLElement} element Element to parser
    * @param {Object} [options] Options object
    */
-  static async fromElement(
-    element: HTMLElement,
-    options: Abortable,
-    cssRules?: CSSRules
-  ) {
-    const points = parsePointsAttribute(element.getAttribute('points')),
-      // we omit left and top to instruct the constructor to position the object using the bbox
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      { left, top, ...parsedAttributes } = parseAttributes(
-        element,
-        this.ATTRIBUTE_NAMES,
-        cssRules
-      );
-    return new this(points, {
-      ...parsedAttributes,
-      ...options,
-    });
-  }
+  // static async fromElement(
+  //   element: HTMLElement,
+  //   options: Abortable,
+  //   cssRules?: CSSRules
+  // ) {
+  //   const points = parsePointsAttribute(element.getAttribute('points')),
+  //     // we omit left and top to instruct the constructor to position the object using the bbox
+  //     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  //     { left, top, ...parsedAttributes } = parseAttributes(
+  //       element,
+  //       this.ATTRIBUTE_NAMES,
+  //       cssRules
+  //     );
+  //   return new this(points, {
+  //     ...parsedAttributes,
+  //     ...options,
+  //   });
+  // }
 
   /* _FROM_SVG_END_ */
 

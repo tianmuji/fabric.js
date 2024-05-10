@@ -313,5 +313,5 @@ export const composeMatrix = ({
     createTranslateMatrix(translateX, translateY),
     angle && createRotateMatrix({ angle }),
     calcDimensionsMatrix(otherOptions),
-  ]);
+  ]) as TMat2D;
 };

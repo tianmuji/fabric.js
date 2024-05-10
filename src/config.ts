@@ -20,14 +20,15 @@ class BaseConfiguration {
   /**
    * Pixel per Inch as a default value set to 96. Can be changed for more realistic conversion.
    */
-  DPI = 96;
+  DPI = 96 * 2;
 
   /**
    * Device Pixel Ratio
    * @see https://developer.apple.com/library/safari/documentation/AudioVideo/Conceptual/HTML-canvas-guide/SettingUptheCanvas/SettingUptheCanvas.html
    */
-  devicePixelRatio =
-    typeof window !== 'undefined' ? window.devicePixelRatio : 1; // eslint-disable-line no-restricted-globals
+  // todo set 1?
+  // display ?
+  devicePixelRatio = 3 // eslint-disable-line no-restricted-globals
 
   /**
    * Pixel limit for cache canvases. 1Mpx , 4Mpx should be fine.

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { ObjectEvents } from '../../EventTypeDefs';
 import type { FabricObjectProps, SerializedObjectProps } from '../Object/types';
 import type { TOptions } from '../../typedefs';
@@ -6,7 +7,6 @@ import { styleProperties } from './constants';
 import type { StylePropertiesType } from './constants';
 import type { FabricText } from './Text';
 import { pick } from '../../util';
-import { pickBy } from '../../util/misc/pick';
 
 export type CompleteTextStyleDeclaration = Pick<
   FabricText,
@@ -182,25 +182,18 @@ export abstract class StyledText<
     }
   }
 
-  private _extendStyles(index: number, style: TextStyleDeclaration): void {
+  private _extendStyles(index: number, styles: TextStyleDeclaration): void {
     const { lineIndex, charIndex } = this.get2DCursorLocation(index);
 
     if (!this._getLineStyle(lineIndex)) {
       this._setLineStyle(lineIndex);
     }
 
-    const newStyle = pickBy(
-      {
-        // first create a new object that is a merge of existing and new
-        ...this._getStyleDeclaration(lineIndex, charIndex),
-        ...style,
-        // use the predicate to discard undefined values
-      },
-      (value) => value !== undefined
-    );
+    if (!Object.keys(this._getStyleDeclaration(lineIndex, charIndex)).length) {
+      this._setStyleDeclaration(lineIndex, charIndex, {});
+    }
 
-    // finally assign to the old position the new style
-    this._setStyleDeclaration(lineIndex, charIndex, newStyle);
+    Object.assign(this._getStyleDeclaration(lineIndex, charIndex), styles);
   }
 
   /**
@@ -251,15 +244,11 @@ export abstract class StyledText<
   }
 
   /**
-   * Get a reference, not a clone, to the style object for a given character,
-   * if no style is set for a line or char, return a new empty object.
-   * This is tricky and confusing because when you get an empty object you can't
-   * determine if it is a reference or a new one.
-   * @TODO this should always return a reference or always a clone or undefined when necessary.
-   * @protected
+   * get the reference, not a clone, of the style object for a given character,
+   * if not style is set for a pre det
    * @param {Number} lineIndex
    * @param {Number} charIndex
-   * @return {TextStyleDeclaration} a style object reference to the existing one or a new empty object when undefined
+   * @return {Object} style object a REFERENCE to the existing one or a new empty object
    */
   _getStyleDeclaration(
     lineIndex: number,

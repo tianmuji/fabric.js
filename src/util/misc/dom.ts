@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getFabricDocument } from '../../env';
 import type { ImageFormat } from '../../typedefs';
 import { FabricError } from '../internals/console';

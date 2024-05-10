@@ -4,7 +4,6 @@ import type {
   TextStyleDeclaration,
 } from '../../shapes/Text/StyledText';
 import { cloneDeep } from '../internals/cloneDeep';
-import { graphemeSplit } from '../lang_string';
 
 export type TextStyleArray = {
   start: number;
@@ -58,15 +57,14 @@ export const stylesToArray = (
 
   //loop through each textLine
   for (let i = 0; i < textLines.length; i++) {
-    const chars = graphemeSplit(textLines[i]);
     if (!styles[i]) {
       //no styles exist for this line, so add the line's length to the charIndex total and reset prevStyle
-      charIndex += chars.length;
+      charIndex += textLines[i].length;
       prevStyle = {};
       continue;
     }
     //loop through each character of the current line
-    for (let c = 0; c < chars.length; c++) {
+    for (let c = 0; c < textLines[i].length; c++) {
       charIndex++;
       const thisStyle = styles[i][c];
       //check if style exists for this character
@@ -110,10 +108,8 @@ export const stylesFromArray = (
     styleIndex = 0;
   //loop through each textLine
   for (let i = 0; i < textLines.length; i++) {
-    const chars = graphemeSplit(textLines[i]);
-
     //loop through each character of the current line
-    for (let c = 0; c < chars.length; c++) {
+    for (let c = 0; c < textLines[i].length; c++) {
       charIndex++;
       //check if there's a style collection that includes the current character
       if (

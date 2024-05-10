@@ -323,7 +323,7 @@ export class Control {
         (isTouch ? this.touchSizeX : this.sizeX) || objectCornerSize,
         (isTouch ? this.touchSizeY : this.sizeY) || objectCornerSize
       ),
-    ]);
+    ]) as TMat2D
     return {
       tl: new Point(-0.5, -0.5).transform(t),
       tr: new Point(0.5, -0.5).transform(t),

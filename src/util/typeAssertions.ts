@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { FabricObject } from '../shapes/Object/Object';
 import type { TFiller } from '../typedefs';
 import type { FabricText } from '../shapes/Text/Text';
@@ -19,7 +20,9 @@ export const isSerializableFiller = (
 
 export const isPattern = (filler: TFiller): filler is Pattern => {
   return (
-    !!filler && (filler as Pattern).offsetX !== undefined && 'source' in filler
+    !!filler &&
+    (filler as Pattern).offsetX !== undefined &&
+    Object.hasOwn(filler, 'source')
   );
 };
 
@@ -44,4 +47,4 @@ export const isPath = (fabricObject?: FabricObject): fabricObject is Path => {
 export const isActiveSelection = (
   fabricObject?: FabricObject
 ): fabricObject is ActiveSelection =>
-  !!fabricObject && 'multiSelectionStacking' in fabricObject;
+  !!fabricObject && fabricObject.multiSelectionStacking

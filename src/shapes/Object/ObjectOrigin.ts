@@ -1,6 +1,6 @@
 import { Point } from '../../Point';
 import type { Group } from '../Group';
-import type { TDegree, TOriginX, TOriginY } from '../../typedefs';
+import type { TDegree, TMat2D, TOriginX, TOriginY } from '../../typedefs';
 import { calcDimensionsMatrix, transformPoint } from '../../util/misc/matrix';
 import { sizeAfterTransform } from '../../util/misc/objectTransforms';
 import { degreesToRadians } from '../../util/misc/radiansDegreesConversion';
@@ -49,9 +49,6 @@ export class ObjectOrigin<EventSpec>
    */
   _getTransformedDimensions(options: any = {}): Point {
     const dimOptions = {
-      // if scaleX or scaleY are negative numbers,
-      // this will return dimensions that are negative.
-      // and this will break assumptions around the codebase
       scaleX: this.scaleX,
       scaleY: this.scaleY,
       skewX: this.skewX,
@@ -83,7 +80,7 @@ export class ObjectOrigin<EventSpec>
       finalDimensions = sizeAfterTransform(
         dimX,
         dimY,
-        calcDimensionsMatrix(dimOptions)
+        calcDimensionsMatrix(dimOptions) as TMat2D
       );
     }
 

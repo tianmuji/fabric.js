@@ -1,7 +1,7 @@
 import { Point } from '../Point';
 import { Control } from './Control';
 import type { TMat2D } from '../typedefs';
-import type { Polyline } from '../shapes/Polyline';
+import type { Polyline as FabricPolyLine } from '../shapes/Polyline';
 import { multiplyTransformMatrices } from '../util/misc/matrix';
 import type {
   TModificationEvents,
@@ -21,7 +21,7 @@ type TTransformAnchor = Transform & { pointIndex: number };
  * It'll be used both for drawing and for interaction.
  */
 export const createPolyPositionHandler = (pointIndex: number) => {
-  return function (dim: Point, finalMatrix: TMat2D, polyObject: Polyline) {
+  return function (dim: Point, finalMatrix: TMat2D, polyObject: FabricPolyLine) {
     const { points, pathOffset } = polyObject;
     return new Point(points[pointIndex])
       .subtract(pathOffset)
@@ -48,7 +48,7 @@ export const polyActionHandler = (
   y: number
 ) => {
   const { target, pointIndex } = transform;
-  const poly = target as Polyline;
+  const poly = target as FabricPolyLine;
   const mouseLocalPosition = sendPointToPlane(
     new Point(x, y),
     undefined,
@@ -74,7 +74,7 @@ export const factoryPolyActionHandler = (
     x: number,
     y: number
   ) {
-    const poly = transform.target as Polyline,
+    const poly = transform.target as FabricPolyLine,
       anchorPoint = new Point(
         poly.points[(pointIndex > 0 ? pointIndex : poly.points.length) - 1]
       ),
@@ -102,7 +102,7 @@ export const createPolyActionHandler = (pointIndex: number) =>
   );
 
 export function createPolyControls(
-  poly: Polyline,
+  poly: FabricPolyLine,
   options?: Partial<Control>
 ): Record<string, Control>;
 export function createPolyControls(
@@ -110,7 +110,7 @@ export function createPolyControls(
   options?: Partial<Control>
 ): Record<string, Control>;
 export function createPolyControls(
-  arg0: number | Polyline,
+  arg0: number | FabricPolyLine,
   options: Partial<Control> = {}
 ) {
   const controls = {} as Record<string, Control>;

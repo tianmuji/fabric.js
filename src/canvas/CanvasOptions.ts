@@ -143,28 +143,28 @@ export interface CanvasCursorOptions {
    * @type CSSStyleDeclaration['cursor']
    * @default move
    */
-  hoverCursor: CSSStyleDeclaration['cursor'];
+  hoverCursor: string;
 
   /**
    * Default cursor value used when moving an object on canvas
    * @type CSSStyleDeclaration['cursor']
    * @default move
    */
-  moveCursor: CSSStyleDeclaration['cursor'];
+  moveCursor: string;
 
   /**
    * Default cursor value used for the entire canvas
    * @type String
    * @default default
    */
-  defaultCursor: CSSStyleDeclaration['cursor'];
+  defaultCursor: string;
 
   /**
    * Cursor value used during free drawing
    * @type String
    * @default crosshair
    */
-  freeDrawingCursor: CSSStyleDeclaration['cursor'];
+  freeDrawingCursor: string;
 
   /**
    * Cursor value used for disabled elements ( corners with disabled action )
@@ -172,7 +172,7 @@ export interface CanvasCursorOptions {
    * @since 2.0.0
    * @default not-allowed
    */
-  notAllowedCursor: CSSStyleDeclaration['cursor'];
+  notAllowedCursor: string;
 }
 
 export interface TargetFindOptions {

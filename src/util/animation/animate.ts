@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ValueAnimation } from './ValueAnimation';
 import { ArrayAnimation } from './ArrayAnimation';
 import { ColorAnimation } from './ColorAnimation';

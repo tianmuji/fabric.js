@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { kRect } from '../constants';
 import { SHARED_ATTRIBUTES } from '../parser/attributes';
 import { parseAttributes } from '../parser/parseAttributes';
@@ -52,7 +53,7 @@ export class Rect<
 
   static cacheProperties = [...cacheProperties, ...RECT_PROPS];
 
-  static ownDefaults = rectDefaultValues;
+  static ownDefaults: Record<string, any> = rectDefaultValues;
 
   static getDefaults(): Record<string, any> {
     return {
@@ -95,7 +96,6 @@ export class Rect<
     const rx = this.rx ? Math.min(this.rx, w / 2) : 0;
     const ry = this.ry ? Math.min(this.ry, h / 2) : 0;
     const isRounded = rx !== 0 || ry !== 0;
-
     ctx.beginPath();
 
     ctx.moveTo(x + rx, y);
@@ -138,7 +138,6 @@ export class Rect<
       ctx.bezierCurveTo(x, y + kRect * ry, x + kRect * rx, y, x + rx, y);
 
     ctx.closePath();
-
     this._renderPaintInOrder(ctx);
   }
 
@@ -195,30 +194,30 @@ export class Rect<
    * @param {HTMLElement} element Element to parse
    * @param {Object} [options] Options object
    */
-  static async fromElement(
-    element: HTMLElement,
-    options: Abortable,
-    cssRules?: CSSRules
-  ) {
-    const {
-      left = 0,
-      top = 0,
-      width = 0,
-      height = 0,
-      visible = true,
-      ...restOfparsedAttributes
-    } = parseAttributes(element, this.ATTRIBUTE_NAMES, cssRules);
-
-    return new this({
-      ...options,
-      ...restOfparsedAttributes,
-      left,
-      top,
-      width,
-      height,
-      visible: Boolean(visible && width && height),
-    });
-  }
+  // static async fromElement(
+  //   element: HTMLElement,
+  //   options: Abortable,
+  //   cssRules?: CSSRules
+  // ) {
+  //   const {
+  //     left = 0,
+  //     top = 0,
+  //     width = 0,
+  //     height = 0,
+  //     visible = true,
+  //     ...restOfparsedAttributes
+  //   } = parseAttributes(element, this.ATTRIBUTE_NAMES, cssRules);
+  //
+  //   return new this({
+  //     ...options,
+  //     ...restOfparsedAttributes,
+  //     left,
+  //     top,
+  //     width,
+  //     height,
+  //     visible: Boolean(visible && width && height),
+  //   });
+  // }
 
   /* _FROM_SVG_END_ */
 }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { SHARED_ATTRIBUTES } from '../parser/attributes';
 import { parseAttributes } from '../parser/parseAttributes';
 import type { Abortable, TClassProperties, TOptions } from '../typedefs';
@@ -239,20 +240,20 @@ export class Line<
    * @param {Object} [options] Options object
    * @param {Function} [callback] callback function invoked after parsing
    */
-  static async fromElement(
-    element: HTMLElement,
-    options: Abortable,
-    cssRules?: CSSRules
-  ) {
-    const {
-      x1 = 0,
-      y1 = 0,
-      x2 = 0,
-      y2 = 0,
-      ...parsedAttributes
-    } = parseAttributes(element, this.ATTRIBUTE_NAMES, cssRules);
-    return new this([x1, y1, x2, y2], parsedAttributes);
-  }
+  // static async fromElement(
+  //   element: HTMLElement,
+  //   options: Abortable,
+  //   cssRules?: CSSRules
+  // ) {
+  //   const {
+  //     x1 = 0,
+  //     y1 = 0,
+  //     x2 = 0,
+  //     y2 = 0,
+  //     ...parsedAttributes
+  //   } = parseAttributes(element, this.ATTRIBUTE_NAMES, cssRules);
+  //   return new this([x1, y1, x2, y2], parsedAttributes);
+  // }
 
   /* _FROM_SVG_END_ */
 

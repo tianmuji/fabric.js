@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { config } from '../config';
 import type { Abortable, TCrossOrigin, TMat2D, TSize } from '../typedefs';
 import { ifNaN } from '../util/internals';
@@ -73,7 +74,7 @@ export class Pattern {
   /**
    * The actual pixel source of the pattern
    */
-  declare source: CanvasImageSource;
+  declare source: CanvasRenderingContext2D;
 
   /**
    * If true, this object will not be exported during the serialization of a canvas
@@ -100,17 +101,19 @@ export class Pattern {
   /**
    * @returns true if {@link source} is an <img> element
    */
-  isImageSource(): this is { source: HTMLImageElement } {
-    return (
-      !!this.source && typeof (this.source as HTMLImageElement).src === 'string'
-    );
+  isImageSource(): boolean {
+    // return (
+    //   !!this.source && typeof (this.source as HTMLImageElement).src === 'string'
+    // );
+    return false
   }
 
   /**
    * @returns true if {@link source} is a <canvas> element
    */
-  isCanvasSource(): this is { source: HTMLCanvasElement } {
-    return !!this.source && !!(this.source as HTMLCanvasElement).toDataURL;
+  isCanvasSource(): boolean {
+    // return !!this.source && !!(this.source as HTMLCanvasElement).toDataURL;
+    return false
   }
 
   sourceToString(): string {
@@ -174,24 +177,16 @@ export class Pattern {
       patternWidth =
         repeat === 'repeat-y' || repeat === 'no-repeat'
           ? 1 + Math.abs(patternOffsetX || 0)
-          : ifNaN(
-              ((patternSource as HTMLImageElement).width as number) / width,
-              0
-            ),
+          : ifNaN((patternSource.width as number) / width, 0),
       patternHeight =
         repeat === 'repeat-x' || repeat === 'no-repeat'
           ? 1 + Math.abs(patternOffsetY || 0)
-          : ifNaN(
-              ((patternSource as HTMLImageElement).height as number) / height,
-              0
-            );
+          : ifNaN((patternSource.height as number) / height, 0);
 
     return [
       `<pattern id="SVGID_${id}" x="${patternOffsetX}" y="${patternOffsetY}" width="${patternWidth}" height="${patternHeight}">`,
-      `<image x="0" y="0" width="${
-        (patternSource as HTMLImageElement).width
-      }" height="${
-        (patternSource as HTMLImageElement).height
+      `<image x="0" y="0" width="${patternSource.width}" height="${
+        patternSource.height
       }" xlink:href="${this.sourceToString()}"></image>`,
       `</pattern>`,
       '',

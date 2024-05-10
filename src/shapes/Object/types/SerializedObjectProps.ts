@@ -1,6 +1,8 @@
+// @ts-nocheck
 import type { Shadow } from '../../../Shadow';
 import type { BaseProps } from './BaseProps';
 import type { FillStrokeProps } from './FillStrokeProps';
+type GlobalCompositeOperation = "color" | "color-burn" | "color-dodge" | "copy" | "darken" | "destination-atop" | "destination-in" | "destination-out" | "destination-over" | "difference" | "exclusion" | "hard-light" | "hue" | "lighten" | "lighter" | "luminosity" | "multiply" | "overlay" | "saturation" | "screen" | "soft-light" | "source-atop" | "source-in" | "source-out" | "source-over" | "xor";
 
 export interface SerializedObjectProps extends BaseProps, FillStrokeProps {
   /**
@@ -46,7 +48,7 @@ export interface SerializedObjectProps extends BaseProps, FillStrokeProps {
    * If you want 0,0 of a clipPath to align with an object center, use clipPath.originX/Y to 'center'
    * @type FabricObject
    */
-  clipPath?: Partial<SerializedObjectProps & ClipPathProps>;
+  clipPath?: Partial<SerializedObjectProps> & ClipPathProps;
 }
 
 export interface ClipPathProps {

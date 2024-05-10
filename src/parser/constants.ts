@@ -1,4 +1,4 @@
-import { getSvgRegex } from './getSvgRegex';
+// import { getSvgRegex } from './getSvgRegex';
 import { LEFT, TOP } from '../constants';
 
 export const reNum = String.raw`(?:[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?)`;
@@ -73,11 +73,11 @@ export const svgValidTagNames = [
   fSize = 'font-size',
   cPath = 'clip-path';
 
-export const svgValidTagNamesRegEx = getSvgRegex(svgValidTagNames);
-
-export const svgViewBoxElementsRegEx = getSvgRegex(svgViewBoxElements);
-
-export const svgValidParentsRegEx = getSvgRegex(svgValidParents);
+// export const svgValidTagNamesRegEx = getSvgRegex(svgValidTagNames);
+//
+// export const svgViewBoxElementsRegEx = getSvgRegex(svgViewBoxElements);
+//
+// export const svgValidParentsRegEx = getSvgRegex(svgValidParents);
 
 // http://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
 // matches, e.g.: +14.56e-12, etc.

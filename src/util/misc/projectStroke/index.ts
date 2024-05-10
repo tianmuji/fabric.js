@@ -1,4 +1,5 @@
-import { Point, type XY } from '../../../Point';
+import { Point,  } from '../../../Point';
+import type { XY } from '../../../Point';
 import { findIndexRight } from '../../internals';
 import { StrokeLineCapProjections } from './StrokeLineCapProjections';
 import { StrokeLineJoinProjections } from './StrokeLineJoinProjections';

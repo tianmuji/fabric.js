@@ -9,8 +9,7 @@
 import { config } from '../config';
 import { getEnv as getBrowserEnv } from './browser';
 import type { TFabricEnv } from './types';
-import type { DOMWindow } from 'jsdom';
-
+import window from '@ohos.window';
 let env: TFabricEnv;
 
 /**
@@ -35,13 +34,10 @@ export const setEnv = (value: TFabricEnv) => {
  */
 export const getEnv = () => env || (env = getBrowserEnv());
 
-export const getFabricDocument = (): Document => getEnv().document;
+export const getFabricDocument = () => undefined;
 
-export const getFabricWindow = (): (Window & typeof globalThis) | DOMWindow =>
-  getEnv().window;
+export const getFabricWindow = () => undefined;
 
-/**
- * @returns the config value if defined, fallbacks to the environment value
- */
-export const getDevicePixelRatio = () =>
-  Math.max(config.devicePixelRatio ?? getFabricWindow().devicePixelRatio, 1);
+
+export const getDevicePixelRatio = () => 1
+  Math.max(config.devicePixelRatio, 1);

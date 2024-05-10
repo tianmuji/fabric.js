@@ -11,7 +11,7 @@ type ExportedKeys =
   | 'source';
 
 export type PatternOptions = Partial<Pick<Pattern, ExportedKeys>> & {
-  source: CanvasImageSource;
+  source: CanvasRenderingContext2D;
 };
 
 export type SerializedPatternOptions = PatternOptions & {

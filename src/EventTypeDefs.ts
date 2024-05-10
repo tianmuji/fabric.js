@@ -4,7 +4,7 @@ import type { FabricObject } from './shapes/Object/FabricObject';
 import type { Group } from './shapes/Group';
 import type { TOriginX, TOriginY, TRadian } from './typedefs';
 import type { saveObjectTransform } from './util/misc/objectTransforms';
-import type { Canvas } from './canvas/Canvas';
+import type { Canvas as FabricCanvas } from './canvas/Canvas';
 import type { IText } from './shapes/IText/IText';
 import type { StaticCanvas } from './canvas/StaticCanvas';
 import type {
@@ -12,14 +12,24 @@ import type {
   LayoutAfterEvent,
 } from './LayoutManager/types';
 
-export type ModifierKey = keyof Pick<
-  MouseEvent | PointerEvent | TouchEvent,
-  'altKey' | 'shiftKey' | 'ctrlKey' | 'metaKey'
->;
+// 不支持?
+// 直接使用字面量
+// export type ModifierKey = keyof Pick<
+//   ClickEvent,
+//   'altKey' | 'shiftKey' | 'ctrlKey' | 'metaKey'
+// >;
+
+export type ModifierKey = 'altKey' | 'shiftKey' | 'ctrlKey' | 'metaKey'
 
 export type TOptionalModifierKey = ModifierKey | null | undefined;
 
-export type TPointerEvent = MouseEvent | TouchEvent | PointerEvent;
+// todo
+// if type exists then is touch event?
+export interface TPointerEvent extends ClickEvent {
+  id?: number,
+  type?: TouchType,
+  stopPropagation?: () => void
+}
 
 export type TransformAction<T extends Transform = Transform, R = void> = (
   eventData: TPointerEvent,
@@ -82,15 +92,15 @@ export type Transform = {
   actionPerformed: boolean;
 };
 
-export interface TEvent<E extends Event = TPointerEvent> {
+export interface TEvent<E extends BaseEvent = TPointerEvent> {
   e: E;
 }
 
-interface TEventWithTarget<E extends Event = TPointerEvent> extends TEvent<E> {
+interface TEventWithTarget<E extends BaseEvent = TPointerEvent> extends TEvent<E> {
   target: FabricObject;
 }
 
-export interface BasicTransformEvent<E extends Event = TPointerEvent>
+export interface BasicTransformEvent<E extends BaseEvent = TPointerEvent>
   extends TEvent<E> {
   transform: Transform;
   pointer: Point;
@@ -104,7 +114,7 @@ export type TModificationEvents =
   | 'resizing'
   | 'modifyPoly';
 
-export interface ModifiedEvent<E extends Event = TPointerEvent> {
+export interface ModifiedEvent<E extends BaseEvent = TPointerEvent> {
   e?: E;
   transform: Transform;
   target: FabricObject;
@@ -151,7 +161,7 @@ export interface TPointerEventInfo<E extends TPointerEvent = TPointerEvent>
   viewportPoint: Point;
 }
 
-interface SimpleEventHandler<T extends Event = TPointerEvent>
+interface SimpleEventHandler<T extends BaseEvent = TPointerEvent>
   extends TEvent<T> {
   target?: FabricObject;
   subTargets: FabricObject[];
@@ -165,7 +175,7 @@ interface OutEvent {
   nextTarget?: FabricObject;
 }
 
-export interface DragEventData extends TEvent<DragEvent> {
+export interface DragEventData extends TEvent<ClickEvent> {
   target?: FabricObject;
   subTargets?: FabricObject[];
   dragSource?: FabricObject;
@@ -192,7 +202,7 @@ export interface DropEventData extends DragEventData {
 }
 
 interface DnDEvents {
-  dragstart: TEventWithTarget<DragEvent>;
+  dragstart: TEventWithTarget<ClickEvent>;
   drag: DragEventData;
   dragover: DragEventData;
   dragenter: DragEventData & InEvent;
@@ -232,24 +242,55 @@ export interface CollectionEvents {
 type BeforeSuffix<T extends string> = `${T}:before`;
 type WithBeforeSuffix<T extends string> = T | BeforeSuffix<T>;
 
-type TPointerEvents<Prefix extends string> = Record<
-  `${Prefix}${
-    | WithBeforeSuffix<'down'>
-    | WithBeforeSuffix<'move'>
-    | 'dblclick'}`,
-  TPointerEventInfo
-> &
-  Record<
-    `${Prefix}${WithBeforeSuffix<'up'>}`,
+// maybe statically list all possible value
+// hard code Prefix with mouse
+// no mouse wheel event so delete it
+// type TPointerEvents<Prefix extends string> = Record<
+//   `${Prefix}${
+//     | WithBeforeSuffix<'down'>
+//     | WithBeforeSuffix<'move'>
+//     | 'dblclick'}`,
+//   TPointerEventInfo
+// > &
+//   Record<
+//     `${Prefix}${WithBeforeSuffix<'up'>}`,
+//     TPointerEventInfo & {
+//       isClick: boolean;
+//       currentTarget?: FabricObject;
+//       currentSubTargets: FabricObject[];
+//     }
+//   > &
+//   Record<`${Prefix}wheel`, TPointerEventInfo<WheelEvent>> &
+//   Record<`${Prefix}over`, TPointerEventInfo & InEvent> &
+//   Record<`${Prefix}out`, TPointerEventInfo & OutEvent>;
+
+
+type TPointerEvents<Prefix extends string> =
+Record<'mousedown', TPointerEventInfo> &
+Record<'mousedown:before', TPointerEventInfo> &
+Record<'mousemove', TPointerEventInfo> &
+Record<'mousemove:before', TPointerEventInfo> &
+Record<'mousedbclick', TPointerEventInfo> &
+Record<'mousedbclick:before', TPointerEventInfo> &
+Record<
+    'mouseup',
     TPointerEventInfo & {
       isClick: boolean;
       currentTarget?: FabricObject;
       currentSubTargets: FabricObject[];
     }
   > &
-  Record<`${Prefix}wheel`, TPointerEventInfo<WheelEvent>> &
-  Record<`${Prefix}over`, TPointerEventInfo & InEvent> &
-  Record<`${Prefix}out`, TPointerEventInfo & OutEvent>;
+Record<
+'mouseup:before',
+TPointerEventInfo & {
+  isClick: boolean;
+  currentTarget?: FabricObject;
+  currentSubTargets: FabricObject[];
+}
+> &
+  // Record<'mousewheel', TPointerEventInfo<WheelEvent>> &
+  Record<'mouseover', TPointerEventInfo & InEvent> &
+  Record<'mouseout', TPointerEventInfo & OutEvent>;
 
 export type TPointerEventNames =
   | WithBeforeSuffix<'down'>
@@ -262,8 +303,8 @@ export type ObjectPointerEvents = TPointerEvents<'mouse'>;
 export type CanvasPointerEvents = TPointerEvents<'mouse:'>;
 
 export interface MiscEvents {
-  'contextmenu:before': SimpleEventHandler<Event>;
-  contextmenu: SimpleEventHandler<Event>;
+  'contextmenu:before': SimpleEventHandler<ClickEvent>;
+  contextmenu: SimpleEventHandler<ClickEvent>;
 }
 
 export interface ObjectEvents
@@ -280,8 +321,8 @@ export interface ObjectEvents
   };
 
   // tree
-  added: { target: Group | Canvas | StaticCanvas };
-  removed: { target: Group | Canvas | StaticCanvas };
+  added: { target: Group | FabricCanvas | StaticCanvas };
+  removed: { target: Group | FabricCanvas | StaticCanvas };
 
   // erasing
   'erasing:end': { path: FabricObject };

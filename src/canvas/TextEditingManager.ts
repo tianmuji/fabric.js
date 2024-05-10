@@ -1,7 +1,7 @@
 import type { TPointerEvent } from '../EventTypeDefs';
 import type { ITextBehavior } from '../shapes/IText/ITextBehavior';
 import { removeFromArray } from '../util/internals';
-import type { Canvas } from './Canvas';
+import type { Canvas as FabricCanvas } from './Canvas';
 
 /**
  * In charge of synchronizing all interactive text instances of a canvas
@@ -9,17 +9,19 @@ import type { Canvas } from './Canvas';
 export class TextEditingManager {
   private targets: ITextBehavior[] = [];
   private declare target?: ITextBehavior;
-  private __disposer: VoidFunction;
+  private __disposer: Function;
 
-  constructor(canvas: Canvas) {
+  constructor(canvas: FabricCanvas) {
     const cb = () => {
       const { hiddenTextarea } =
         (canvas.getActiveObject() as ITextBehavior) || {};
-      hiddenTextarea && hiddenTextarea.focus();
+      // hiddenTextarea && hiddenTextarea.focus();
     };
+    // todo
+    // how to add event listener in HarmonyOS?
     const el = canvas.upperCanvasEl;
-    el.addEventListener('click', cb);
-    this.__disposer = () => el.removeEventListener('click', cb);
+    // el.addEventListener('click', cb);
+    // this.__disposer = () => el.removeEventListener('click', cb);
   }
 
   exitTextEditing() {
@@ -62,7 +64,6 @@ export class TextEditingManager {
   dispose() {
     this.clear();
     this.__disposer();
-    // @ts-expect-error disposing
     delete this.__disposer;
   }
 }

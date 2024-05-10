@@ -1,6 +1,7 @@
 import { Point } from '../../Point';
 import type { FabricObject } from '../../shapes/Object/FabricObject';
 import { makeBoundingBoxFromPoints } from '../../util/misc/boundingBoxFromPoints';
+import { resolveOrigin } from '../../util/misc/resolveOrigin';
 import {
   LAYOUT_TYPE_INITIALIZATION,
   LAYOUT_TYPE_IMPERATIVE,
@@ -26,8 +27,6 @@ export abstract class LayoutStrategy {
 
   /**
    * Used by the `LayoutManager` to perform layout
-   * @TODO/fix: if this method is calcResult, should calc unconditionally.
-   * the condition to not calc should be evaluated by the layoutManager.
    * @returns layout result **OR** `undefined` to skip layout
    */
   public calcLayoutResult(
@@ -90,11 +89,19 @@ export abstract class LayoutStrategy {
         size: bboxSize,
         center: bboxCenter,
       });
+      const originFactor = new Point(
+        -resolveOrigin(target.originX),
+        -resolveOrigin(target.originY)
+      );
+      const sizeCorrection = actualSize
+        .subtract(bboxSize)
+        .multiply(originFactor);
+      // translate the layout origin from left top to target's origin
+      const center = bboxLeftTop.add(bboxSize.multiply(originFactor));
       return {
         // in `initialization` we do not account for target's transformation matrix
-        center: bboxCenter,
-        // TODO: investigate if this is still necessary
-        relativeCorrection: new Point(0, 0),
+        center: center.add(sizeCorrection),
+        relativeCorrection: center.subtract(bboxCenter),
         size: actualSize,
       };
     } else {

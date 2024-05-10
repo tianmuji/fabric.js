@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { ObjectEvents } from '../EventTypeDefs';
 import { SHARED_ATTRIBUTES } from '../parser/attributes';
 import { parseAttributes } from '../parser/parseAttributes';
@@ -19,26 +20,20 @@ interface UniqueCircleProps {
   radius: number;
 
   /**
-   * Angle for the start of the circle, in degrees.
-   * @type TDegree 0 - 359
+   * degrees of start of the circle.
+   * probably will change to degrees in next major version
+   * @type Number 0 - 359
    * @default 0
    */
   startAngle: number;
 
   /**
-   * Angle for the end of the circle, in degrees
-   * @type TDegree 1 - 360
+   * End angle of the circle
+   * probably will change to degrees in next major version
+   * @type Number 1 - 360
    * @default 360
    */
   endAngle: number;
-
-  /**
-   * Orientation for the direction of the circle.
-   * Setting to true will switch the arc of the circle to traverse from startAngle to endAngle in a counter-clockwise direction.
-   * Note: this will only change how the circle is drawn, and does not affect rotational transformation.
-   * @default false
-   */
-  counterClockwise: boolean;
 }
 
 export interface SerializedCircleProps
@@ -47,18 +42,12 @@ export interface SerializedCircleProps
 
 export interface CircleProps extends FabricObjectProps, UniqueCircleProps {}
 
-const CIRCLE_PROPS = [
-  'radius',
-  'startAngle',
-  'endAngle',
-  'counterClockwise',
-] as const;
+const CIRCLE_PROPS = ['radius', 'startAngle', 'endAngle'] as const;
 
-export const circleDefaultValues: Partial<TClassProperties<Circle>> = {
+export const circleDefaultValues: UniqueCircleProps = {
   radius: 0,
   startAngle: 0,
   endAngle: 360,
-  counterClockwise: false,
 };
 
 export class Circle<
@@ -72,13 +61,12 @@ export class Circle<
   declare radius: number;
   declare startAngle: number;
   declare endAngle: number;
-  declare counterClockwise: boolean;
 
   static type = 'Circle';
 
   static cacheProperties = [...cacheProperties, ...CIRCLE_PROPS];
 
-  static ownDefaults = circleDefaultValues;
+  static ownDefaults: Record<string, any> = circleDefaultValues;
 
   static getDefaults(): Record<string, any> {
     return {
@@ -114,7 +102,7 @@ export class Circle<
       this.radius,
       degreesToRadians(this.startAngle),
       degreesToRadians(this.endAngle),
-      this.counterClockwise
+      false
     );
     this._renderPaintInOrder(ctx);
   }
@@ -182,10 +170,14 @@ export class Circle<
         startY = sin(start) * radius,
         endX = cos(end) * radius,
         endY = sin(end) * radius,
-        largeFlag = angle > 180 ? 1 : 0,
-        sweepFlag = this.counterClockwise ? 0 : 1;
+        largeFlag = angle > 180 ? '1' : '0';
       return [
-        `<path d="M ${startX} ${startY} A ${radius} ${radius} 0 ${largeFlag} ${sweepFlag} ${endX} ${endY}" `,
+        `<path d="M ${startX} ${startY}`,
+        ` A ${radius} ${radius}`,
+        ' 0 ',
+        `${largeFlag} 1`,
+        ` ${endX} ${endY}`,
+        '" ',
         'COMMON_PARTS',
         ' />\n',
       ];
@@ -210,31 +202,31 @@ export class Circle<
    * @param {Object} [options] Partial Circle object to default missing properties on the element.
    * @throws {Error} If value of `r` attribute is missing or invalid
    */
-  static async fromElement(
-    element: HTMLElement,
-    options: Abortable,
-    cssRules?: CSSRules
-  ): Promise<Circle> {
-    const {
-      left = 0,
-      top = 0,
-      radius = 0,
-      ...otherParsedAttributes
-    } = parseAttributes(
-      element,
-      this.ATTRIBUTE_NAMES,
-      cssRules
-    ) as Partial<CircleProps>;
-
-    // this probably requires to be fixed for default origins not being top/left.
-
-    return new this({
-      ...otherParsedAttributes,
-      radius,
-      left: left - radius,
-      top: top - radius,
-    });
-  }
+  // static async fromElement(
+  // element: HTMLElement,
+  //   options: Abortable,
+  //   cssRules?: CSSRules
+  // ): Promise<Circle> {
+  //   const {
+  //     left = 0,
+  //     top = 0,
+  //     radius = 0,
+  //     ...otherParsedAttributes
+  //   } = parseAttributes(
+  //     element,
+  //     this.ATTRIBUTE_NAMES,
+  //     cssRules
+  //   ) as Partial<CircleProps>;
+  //
+  //   // this probably requires to be fixed for default origins not being top/left.
+  //
+  //   return new this({
+  //     ...otherParsedAttributes,
+  //     radius,
+  //     left: left - radius,
+  //     top: top - radius,
+  //   });
+  // }
 
   /* _FROM_SVG_END_ */
 

@@ -1,6 +1,7 @@
 import { Point, ZERO } from '../../Point';
 import type { Group } from '../../shapes/Group';
 import type { FabricObject } from '../../shapes/Object/FabricObject';
+import { TMat2D } from '../../typedefs';
 import { multiplyTransformMatrixArray } from '../../util/misc/matrix';
 import { sizeAfterTransform } from '../../util/misc/objectTransforms';
 import {
@@ -48,7 +49,7 @@ export const getObjectBounds = (
   const sizeVector = sizeAfterTransform(
     width + scalingStrokeWidth,
     height + scalingStrokeWidth,
-    multiplyTransformMatrixArray([t, object.calcOwnMatrix()], true)
+    multiplyTransformMatrixArray([t, object.calcOwnMatrix()], true) as TMat2D
   )
     .add(strokeUniformVector)
     .scalarDivide(2);

@@ -1,5 +1,3 @@
-//@ts-nocheck
-
 import { scalingEqually } from '../controls/scale';
 import { fireEvent } from '../controls/fireEvent';
 import {

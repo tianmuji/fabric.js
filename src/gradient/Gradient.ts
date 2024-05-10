@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Color } from '../color/Color';
 import { iMatrix } from '../constants';
 import { parseTransformAttribute } from '../parser/parseTransformAttribute';
@@ -7,9 +8,9 @@ import { uid } from '../util/internals/uid';
 import { pick } from '../util/misc/pick';
 import { matrixToSVG } from '../util/misc/svgParsing';
 import { linearDefaultCoords, radialDefaultCoords } from './constants';
-import { parseColorStops } from './parser/parseColorStops';
-import { parseCoords } from './parser/parseCoords';
-import { parseType, parseGradientUnits } from './parser/misc';
+// import { parseColorStops } from './parser/parseColorStops';
+// import { parseCoords } from './parser/parseCoords';
+// import { parseType, parseGradientUnits } from './parser/misc';
 import type {
   ColorStop,
   GradientCoords,
@@ -321,18 +322,6 @@ export class Gradient<
     return gradient;
   }
 
-  static async fromObject(
-    options: GradientOptions<'linear'>
-  ): Promise<Gradient<'radial'>>;
-  static async fromObject(
-    options: GradientOptions<'radial'>
-  ): Promise<Gradient<'radial'>>;
-  static async fromObject(
-    options: GradientOptions<'linear'> | GradientOptions<'radial'>
-  ) {
-    return new this(options);
-  }
-
   /* _FROM_SVG_START_ */
   /**
    * Returns {@link Gradient} instance from an SVG element
@@ -378,39 +367,37 @@ export class Gradient<
    *  </radialGradient>
    *
    */
-  static fromElement(
-    el: SVGGradientElement,
-    instance: FabricObject,
-    svgOptions: SVGOptions
-  ): Gradient<GradientType> {
-    const gradientUnits = parseGradientUnits(el);
-    const center = instance._findCenterFromElement();
-    return new this({
-      id: el.getAttribute('id') || undefined,
-      type: parseType(el),
-      coords: parseCoords(el, {
-        width: svgOptions.viewBoxWidth || svgOptions.width,
-        height: svgOptions.viewBoxHeight || svgOptions.height,
-      }),
-      colorStops: parseColorStops(el, svgOptions.opacity),
-      gradientUnits,
-      gradientTransform: parseTransformAttribute(
-        el.getAttribute('gradientTransform') || ''
-      ),
-      ...(gradientUnits === 'pixels'
-        ? {
-            offsetX: instance.width / 2 - center.x,
-            offsetY: instance.height / 2 - center.y,
-          }
-        : {
-            offsetX: 0,
-            offsetY: 0,
-          }),
-    });
-  }
+  // static fromElement(
+  //   el: SVGGradientElement,
+  //   instance: FabricObject,
+  //   svgOptions: SVGOptions
+  // ): Gradient<GradientType> {
+  //   const gradientUnits = parseGradientUnits(el);
+  //   const center = instance._findCenterFromElement();
+  //   return new this({
+  //     id: el.getAttribute('id') || undefined,
+  //     type: parseType(el),
+  //     coords: parseCoords(el, {
+  //       width: svgOptions.viewBoxWidth || svgOptions.width,
+  //       height: svgOptions.viewBoxHeight || svgOptions.height,
+  //     }),
+  //     colorStops: parseColorStops(el, svgOptions.opacity),
+  //     gradientUnits,
+  //     gradientTransform: parseTransformAttribute(
+  //       el.getAttribute('gradientTransform') || ''
+  //     ),
+  //     ...(gradientUnits === 'pixels'
+  //       ? {
+  //           offsetX: instance.width / 2 - center.x,
+  //           offsetY: instance.height / 2 - center.y,
+  //         }
+  //       : {
+  //           offsetX: 0,
+  //           offsetY: 0,
+  //         }),
+  //   });
+  // }
   /* _FROM_SVG_END_ */
 }
 
 classRegistry.setClass(Gradient, 'gradient');
-classRegistry.setClass(Gradient, 'linear');
-classRegistry.setClass(Gradient, 'radial');

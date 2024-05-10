@@ -1,10 +1,10 @@
 import { classRegistry } from '../ClassRegistry';
 import { FabricObject } from './Object/FabricObject';
 import type { FabricObjectProps, SerializedObjectProps } from './Object/types';
-import type { TClassProperties, TOptions } from '../typedefs';
+import type { TOptions } from '../typedefs';
 import type { ObjectEvents } from '../EventTypeDefs';
 
-export const triangleDefaultValues: Partial<TClassProperties<Triangle>> = {
+export const triangleDefaultValues = {
   width: 100,
   height: 100,
 };
@@ -19,9 +19,9 @@ export class Triangle<
 {
   static type = 'Triangle';
 
-  static ownDefaults = triangleDefaultValues;
+  static ownDefaults: Record<string, any> = triangleDefaultValues;
 
-  static getDefaults(): Record<string, any> {
+  static getDefaults() {
     return { ...super.getDefaults(), ...Triangle.ownDefaults };
   }
 

@@ -90,5 +90,5 @@ export function parseTransformAttribute(attributeValue: string): TMat2D {
     matrices.push(matrix);
   }
 
-  return multiplyTransformMatrixArray(matrices);
+  return multiplyTransformMatrixArray(matrices) as TMat2D;
 }

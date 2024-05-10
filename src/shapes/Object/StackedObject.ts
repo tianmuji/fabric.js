@@ -1,9 +1,11 @@
+// @ts-nocheck
 import type { ObjectEvents } from '../../EventTypeDefs';
 import type { Group } from '../Group';
 import type { Canvas } from '../../canvas/Canvas';
 import type { StaticCanvas } from '../../canvas/StaticCanvas';
 import { ObjectGeometry } from './ObjectGeometry';
 
+type test = any
 type TAncestor = StackedObject | Canvas | StaticCanvas;
 type TCollection = Group | Canvas | StaticCanvas;
 
@@ -13,7 +15,7 @@ type TCollection = Group | Canvas | StaticCanvas;
 export type Ancestors<Strict> = Strict extends true
   ? [StackedObject | Group] | [StackedObject | Group, ...Group[]] | Group[]
   :
-      | [StackedObject | Group | Canvas | StaticCanvas]
+      [StackedObject | Group | Canvas | StaticCanvas]
       | [StackedObject | Group, Canvas | StaticCanvas]
       | [StackedObject, ...Group[]]
       | Group[]

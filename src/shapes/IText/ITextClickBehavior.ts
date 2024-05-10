@@ -1,4 +1,4 @@
-import type { TPointerEvent, TPointerEventInfo } from '../../EventTypeDefs';
+import type { DragEventData, TPointerEvent, TPointerEventInfo } from '../../EventTypeDefs';
 import type { XY } from '../../Point';
 import { Point } from '../../Point';
 import { stopEvent } from '../../util/dom_event';
@@ -12,7 +12,7 @@ import type { TextProps, SerializedTextProps } from '../Text/Text';
 /**
  * `LEFT_CLICK === 0`
  */
-const notALeftClick = (e: Event) => !!(e as MouseEvent).button;
+const notALeftClick = (e: ClickEvent) => !!(e as MouseEvent).button;
 
 export abstract class ITextClickBehavior<
   Props extends TOptions<TextProps> = Partial<TextProps>,
@@ -29,18 +29,18 @@ export abstract class ITextClickBehavior<
 
   initBehavior() {
     // Initializes event handlers related to cursor or selection
-    this.on('mousedown', this._mouseDownHandler);
-    this.on('mousedown:before', this._mouseDownHandlerBefore);
-    this.on('mouseup', this.mouseUpHandler);
-    this.on('mousedblclick', this.doubleClickHandler);
-    this.on('tripleclick', this.tripleClickHandler);
-
-    // Initializes "dbclick" event handler
-    this.__lastClickTime = +new Date();
-    // for triple click
-    this.__lastLastClickTime = +new Date();
-    this.__lastPointer = {};
-    this.on('mousedown', this.onMouseDown);
+    // this.on('mousedown', this._mouseDownHandler);
+    // this.on('mousedown:before', this._mouseDownHandlerBefore);
+    // this.on('mouseup', this.mouseUpHandler);
+    // this.on('mousedblclick', this.doubleClickHandler);
+    // this.on('tripleclick', this.tripleClickHandler);
+    //
+    // // Initializes "dbclick" event handler
+    // this.__lastClickTime = +new Date();
+    // // for triple click
+    // this.__lastLastClickTime = +new Date();
+    // this.__lastPointer = {};
+    // this.on('mousedown', this.onMouseDown);
 
     // @ts-expect-error in reality it is an IText instance
     this.draggableTextDelegate = new DraggableTextDelegate(this);
@@ -48,21 +48,12 @@ export abstract class ITextClickBehavior<
     super.initBehavior();
   }
 
-  /**
-   * If this method returns true a mouse move operation over a text selection
-   * will not prevent the native mouse event allowing the browser to start a drag operation.
-   * shouldStartDragging can be read 'do not prevent default for mouse move event'
-   * To prevent drag and drop between objects both shouldStartDragging and onDragStart should return false
-   * @returns
-   */
   shouldStartDragging() {
     return this.draggableTextDelegate.isActive();
   }
 
   /**
-   * @public override this method to control whether instance should/shouldn't become a drag source,
-   * @see also {@link DraggableTextDelegate#isActive}
-   * To prevent drag and drop between objects both shouldStartDragging and onDragStart should return false
+   * @public override this method to control whether instance should/shouldn't become a drag source, @see also {@link DraggableTextDelegate#isActive}
    * @returns {boolean} should handle event
    */
   onDragStart(e: DragEvent) {
@@ -147,6 +138,7 @@ export abstract class ITextClickBehavior<
       return;
     }
 
+    // @ts-ignore
     this.canvas.textEditingManager.register(this);
 
     if (this.selected) {
@@ -226,6 +218,10 @@ export abstract class ITextClickBehavior<
     const newSelection = this.getSelectionStartFromPointer(e),
       start = this.selectionStart,
       end = this.selectionEnd;
+    // support ?
+    // mouse event does not support shiftKey
+    // just ignore
+    // @ts-ignore
     if (e.shiftKey) {
       this.setSelectionStartEndWithShift(start, end, newSelection);
     } else {

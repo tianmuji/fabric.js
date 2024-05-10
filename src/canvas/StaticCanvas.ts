@@ -2,7 +2,7 @@ import { config } from '../config';
 import { CENTER, VERSION } from '../constants';
 import type { CanvasEvents, StaticCanvasEvents } from '../EventTypeDefs';
 import type { Gradient } from '../gradient/Gradient';
-import { createCollectionMixin, isCollection } from '../Collection';
+import { Collection, createCollectionMixin, isCollection } from '../Collection';
 import { CommonMethods } from '../CommonMethods';
 import type { Pattern } from '../Pattern';
 import { Point } from '../Point';
@@ -86,12 +86,13 @@ export type TSVGExportOptions = {
 export class StaticCanvas<
     EventSpec extends StaticCanvasEvents = StaticCanvasEvents
   >
-  extends createCollectionMixin(CommonMethods<CanvasEvents>)
+  extends Collection
   implements StaticCanvasOptions
 {
   declare width: number;
   declare height: number;
-
+  declare offsetWidth: number;
+  declare offsetHeight: number;
   // background
   declare backgroundVpt: boolean;
   declare backgroundColor: TFiller | string;
@@ -134,7 +135,7 @@ export class StaticCanvas<
    * @type HTMLCanvasElement
    */
   get lowerCanvasEl() {
-    return this.elements.lower?.el;
+    return this.elements.lower?.ctx;
   }
 
   get contextContainer() {
@@ -174,7 +175,9 @@ export class StaticCanvas<
   }
 
   constructor(
-    el?: string | HTMLCanvasElement,
+    el: CanvasRenderingContext2D,
+    width: number,
+    height: number,
     options: TOptions<StaticCanvasOptions> = {}
   ) {
     super();
@@ -182,17 +185,25 @@ export class StaticCanvas<
       this,
       (this.constructor as typeof StaticCanvas).getDefaults()
     );
+    this.width = width
+    this.height = height
     this.set(options);
     this.initElements(el);
+    // todo
+    // how to get width and height of canvas?
+    // prefer to pass in width and height
+    // no need to set width and height
+    // but we need them to calc viewportTransform and boundaries
+    // so we set them from params
     this._setDimensionsImpl({
-      width: this.width || this.elements.lower.el.width || 0,
-      height: this.height || this.elements.lower.el.height || 0,
+      width: this.width,
+      height: this.height,
     });
     this.viewportTransform = [...this.viewportTransform];
     this.calcViewportBoundaries();
   }
 
-  protected initElements(el?: string | HTMLCanvasElement) {
+  protected initElements(el: CanvasRenderingContext2D) {
     this.elements = new StaticCanvasDOMManager(el);
   }
 
@@ -280,17 +291,17 @@ export class StaticCanvas<
    * @param {Boolean}       [options.cssOnly=false]       Set the given dimensions only as css dimensions
    * @deprecated will be removed in 7.0
    */
-  setWidth(
-    value: TSize['width'],
-    options?: { backstoreOnly?: true; cssOnly?: false }
-  ): void;
-  setWidth(
-    value: CSSDimensions['width'],
-    options?: { cssOnly?: true; backstoreOnly?: false }
-  ): void;
-  setWidth(value: number, options?: never) {
-    return this.setDimensions({ width: value }, options);
-  }
+  // setWidth(
+  //   value: TSize['width'],
+  //   options?: { backstoreOnly?: true; cssOnly?: false }
+  // ): void;
+  // setWidth(
+  //   value: CSSDimensions['width'],
+  //   options?: { cssOnly?: true; backstoreOnly?: false }
+  // ): void;
+  // setWidth(value: number, options?: never) {
+  //   return this.setDimensions({ width: value }, options);
+  // }
 
   /**s
    * Sets height of this canvas instance
@@ -300,17 +311,17 @@ export class StaticCanvas<
    * @param {Boolean}       [options.cssOnly=false]       Set the given dimensions only as css dimensions
    * @deprecated will be removed in 7.0
    */
-  setHeight(
-    value: TSize['height'],
-    options?: { backstoreOnly?: true; cssOnly?: false }
-  ): void;
-  setHeight(
-    value: CSSDimensions['height'],
-    options?: { cssOnly?: true; backstoreOnly?: false }
-  ): void;
-  setHeight(value: CSSDimensions['height'], options?: never) {
-    return this.setDimensions({ height: value }, options);
-  }
+  // setHeight(
+  //   value: TSize['height'],
+  //   options?: { backstoreOnly?: true; cssOnly?: false }
+  // ): void;
+  // setHeight(
+  //   value: CSSDimensions['height'],
+  //   options?: { cssOnly?: true; backstoreOnly?: false }
+  // ): void;
+  // setHeight(value: CSSDimensions['height'], options?: never) {
+  //   return this.setDimensions({ height: value }, options);
+  // }
 
   /**
    * Internal use only
@@ -326,13 +337,13 @@ export class StaticCanvas<
         height: this.height,
         ...(dimensions as Partial<TSize>),
       };
-      this.elements.setDimensions(size, this.getRetinaScaling());
+      // this.elements.setDimensions(size, this.getRetinaScaling());
       this.hasLostContext = true;
       this.width = size.width;
       this.height = size.height;
     }
     if (!backstoreOnly) {
-      this.elements.setCSSDimensions(dimensions);
+      // this.elements.setCSSDimensions(dimensions);
     }
 
     this.calcOffset();
@@ -347,24 +358,24 @@ export class StaticCanvas<
    * @param {Boolean}       [options.backstoreOnly=false] Set the given dimensions only as canvas backstore dimensions
    * @param {Boolean}       [options.cssOnly=false]       Set the given dimensions only as css dimensions
    */
-  setDimensions(
-    dimensions: Partial<CSSDimensions>,
-    options?: { cssOnly?: true; backstoreOnly?: false }
-  ): void;
-  setDimensions(
-    dimensions: Partial<TSize>,
-    options?: { backstoreOnly?: true; cssOnly?: false }
-  ): void;
-  setDimensions(dimensions: Partial<TSize>, options?: never): void;
-  setDimensions(
-    dimensions: Partial<TSize | CSSDimensions>,
-    options?: TCanvasSizeOptions
-  ) {
-    this._setDimensionsImpl(dimensions, options);
-    if (!options || !options.cssOnly) {
-      this.requestRenderAll();
-    }
-  }
+  // setDimensions(
+  //   dimensions: Partial<CSSDimensions>,
+  //   options?: { cssOnly?: true; backstoreOnly?: false }
+  // ): void;
+  // setDimensions(
+  //   dimensions: Partial<TSize>,
+  //   options?: { backstoreOnly?: true; cssOnly?: false }
+  // ): void;
+  // setDimensions(dimensions: Partial<TSize>, options?: never): void;
+  // setDimensions(
+  //   dimensions: Partial<TSize | CSSDimensions>,
+  //   options?: TCanvasSizeOptions
+  // ) {
+  //   this._setDimensionsImpl(dimensions, options);
+  //   if (options && !options.cssOnly) {
+  //     this.requestRenderAll();
+  //   }
+  // }
 
   /**
    * Returns canvas zoom level
@@ -455,8 +466,8 @@ export class StaticCanvas<
    * Returns &lt;canvas> element corresponding to this instance
    * @return {HTMLCanvasElement}
    */
-  getElement(): HTMLCanvasElement {
-    return this.elements.lower.el;
+  getElement(): CanvasRenderingContext2D {
+    return this.elements.lower.ctx;
   }
 
   /**
@@ -497,7 +508,7 @@ export class StaticCanvas<
     if (this.destroyed) {
       return;
     }
-    this.renderCanvas(this.getContext(), this._objects);
+    this.renderCanvas(this.elements.lower.ctx, this._objects);
   }
 
   /**
@@ -520,7 +531,14 @@ export class StaticCanvas<
    */
   requestRenderAll() {
     if (!this.nextRenderHandle && !this.disposed && !this.destroyed) {
-      this.nextRenderHandle = requestAnimFrame(() => this.renderAndReset());
+      // todo
+      // the renderAndReset should return a reference and be passed to nextRenderHandle
+      // to make cancel animation work
+      // to avoid memory leak
+      this.nextRenderHandle = 1
+      this.renderAndReset()
+      // this.nextRenderHandle = requestAnimFrame(this.renderAndReset);
+      // requestAnimFrame(this.renderAndReset)
     }
   }
 
@@ -566,14 +584,12 @@ export class StaticCanvas<
     if (this.destroyed) {
       return;
     }
-
     const v = this.viewportTransform,
       path = this.clipPath;
     this.calcViewportBoundaries();
     this.clearContext(ctx);
     ctx.imageSmoothingEnabled = this.imageSmoothingEnabled;
-    // @ts-expect-error node-canvas stuff
-    ctx.patternQuality = 'best';
+    // ctx.patternQuality = 'best';
     this.fire('before:render', { ctx });
     this._renderBackground(ctx);
 
@@ -598,7 +614,6 @@ export class StaticCanvas<
       this.drawControls(ctx);
     }
     this.fire('after:render', { ctx });
-
     if (this.__cleanupTask) {
       this.__cleanupTask();
       this.__cleanupTask = undefined;
@@ -1230,11 +1245,11 @@ export class StaticCanvas<
           filler.offsetY - finalHeight / 2
         }" width="${
           (repeat === 'repeat-y' || repeat === 'no-repeat') && isPattern(filler)
-            ? (filler.source as HTMLImageElement).width
+            ? filler.source.width
             : finalWidth
         }" height="${
           (repeat === 'repeat-x' || repeat === 'no-repeat') && isPattern(filler)
-            ? (filler.source as HTMLImageElement).height
+            ? filler.source.height
             : finalHeight
         }" fill="url(#SVGID_${filler.id})"></rect>\n`
       );
@@ -1381,22 +1396,22 @@ export class StaticCanvas<
    *   filter: (object) => object.isContainedWithinObject(myObject) || object.intersectsWithObject(myObject)
    * });
    */
-  toDataURL(options = {} as TDataUrlOptions): string {
-    const {
-      format = 'png',
-      quality = 1,
-      multiplier = 1,
-      enableRetinaScaling = false,
-    } = options;
-    const finalMultiplier =
-      multiplier * (enableRetinaScaling ? this.getRetinaScaling() : 1);
-
-    return toDataURL(
-      this.toCanvasElement(finalMultiplier, options),
-      format,
-      quality
-    );
-  }
+  // toDataURL(options = {} as TDataUrlOptions): string {
+  //   const {
+  //     format = 'png',
+  //     quality = 1,
+  //     multiplier = 1,
+  //     enableRetinaScaling = false,
+  //   } = options;
+  //   const finalMultiplier =
+  //     multiplier * (enableRetinaScaling ? this.getRetinaScaling() : 1);
+  //
+  //   return toDataURL(
+  //     this.toCanvasElement(finalMultiplier, options),
+  //     format,
+  //     quality
+  //   );
+  // }
 
   /**
    * Create a new HTMLCanvas element painted with the current canvas content.
@@ -1412,40 +1427,43 @@ export class StaticCanvas<
    * @param {Number} [options.height] Cropping height.
    * @param {(object: fabric.Object) => boolean} [options.filter] Function to filter objects.
    */
-  toCanvasElement(
-    multiplier = 1,
-    { width, height, left, top, filter } = {} as TToCanvasElementOptions
-  ): HTMLCanvasElement {
-    const scaledWidth = (width || this.width) * multiplier,
-      scaledHeight = (height || this.height) * multiplier,
-      zoom = this.getZoom(),
-      originalWidth = this.width,
-      originalHeight = this.height,
-      newZoom = zoom * multiplier,
-      vp = this.viewportTransform,
-      translateX = (vp[4] - (left || 0)) * multiplier,
-      translateY = (vp[5] - (top || 0)) * multiplier,
-      newVp = [newZoom, 0, 0, newZoom, translateX, translateY] as TMat2D,
-      originalRetina = this.enableRetinaScaling,
-      canvasEl = createCanvasElement(),
-      objectsToRender = filter
-        ? this._objects.filter((obj) => filter(obj))
-        : this._objects;
-    canvasEl.width = scaledWidth;
-    canvasEl.height = scaledHeight;
-    this.enableRetinaScaling = false;
-    this.viewportTransform = newVp;
-    this.width = scaledWidth;
-    this.height = scaledHeight;
-    this.calcViewportBoundaries();
-    this.renderCanvas(canvasEl.getContext('2d')!, objectsToRender);
-    this.viewportTransform = vp;
-    this.width = originalWidth;
-    this.height = originalHeight;
-    this.calcViewportBoundaries();
-    this.enableRetinaScaling = originalRetina;
-    return canvasEl;
-  }
+  // todo
+  // can not create canvas element
+  // maybe just delete?
+  // toCanvasElement(
+  //   multiplier = 1,
+  //   { width, height, left, top, filter } = {} as TToCanvasElementOptions
+  // ): HTMLCanvasElement {
+  //   const scaledWidth = (width || this.width) * multiplier,
+  //     scaledHeight = (height || this.height) * multiplier,
+  //     zoom = this.getZoom(),
+  //     originalWidth = this.width,
+  //     originalHeight = this.height,
+  //     newZoom = zoom * multiplier,
+  //     vp = this.viewportTransform,
+  //     translateX = (vp[4] - (left || 0)) * multiplier,
+  //     translateY = (vp[5] - (top || 0)) * multiplier,
+  //     newVp = [newZoom, 0, 0, newZoom, translateX, translateY] as TMat2D,
+  //     originalRetina = this.enableRetinaScaling,
+  //     canvasEl = createCanvasElement(),
+  //     objectsToRender = filter
+  //       ? this._objects.filter((obj) => filter(obj))
+  //       : this._objects;
+  //   canvasEl.width = scaledWidth;
+  //   canvasEl.height = scaledHeight;
+  //   this.enableRetinaScaling = false;
+  //   this.viewportTransform = newVp;
+  //   this.width = scaledWidth;
+  //   this.height = scaledHeight;
+  //   this.calcViewportBoundaries();
+  //   this.renderCanvas(canvasEl.getContext('2d')!, objectsToRender);
+  //   this.viewportTransform = vp;
+  //   this.width = originalWidth;
+  //   this.height = originalHeight;
+  //   this.calcViewportBoundaries();
+  //   this.enableRetinaScaling = originalRetina;
+  //   return canvasEl;
+  // }
 
   /**
    * Waits until rendering has settled to destroy the canvas
@@ -1453,8 +1471,8 @@ export class StaticCanvas<
    * @throws if aborted by a consequent call
    */
   dispose() {
-    !this.disposed &&
-      this.elements.cleanupDOM({ width: this.width, height: this.height });
+    // !this.disposed &&
+      // this.elements.cleanupDOM({ width: this.width, height: this.height });
     runningAnimations.cancelByCanvas(this);
     this.disposed = true;
     return new Promise<boolean>((resolve, reject) => {

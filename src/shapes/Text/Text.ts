@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { cache } from '../../cache';
 import { DEFAULT_SVG_FONT_SIZE } from '../../constants';
 import type { ObjectEvents } from '../../EventTypeDefs';
@@ -8,7 +9,7 @@ import type {
 } from './StyledText';
 import { StyledText } from './StyledText';
 import { SHARED_ATTRIBUTES } from '../../parser/attributes';
-import { parseAttributes } from '../../parser/parseAttributes';
+// import { parseAttributes } from '../../parser/parseAttributes';
 import type {
   Abortable,
   TCacheCanvasDimensions,
@@ -27,7 +28,7 @@ import {
 } from '../../util/misc/textStyles';
 import { getPathSegmentsInfo, getPointOnPath } from '../../util/path';
 import { cacheProperties } from '../Object/FabricObject';
-import type { Path } from '../Path';
+import type { Path as FabricPath } from '../Path';
 import { TextSVGExportMixin } from './TextSVGExportMixin';
 import { applyMixins } from '../../util/applyMixins';
 import type { FabricObjectProps, SerializedObjectProps } from '../Object/types';
@@ -55,9 +56,7 @@ let measuringContext: CanvasRenderingContext2D | null;
  */
 function getMeasuringContext() {
   if (!measuringContext) {
-    const canvas = createCanvasElement();
-    canvas.width = canvas.height = 0;
-    measuringContext = canvas.getContext('2d');
+    measuringContext = createCanvasElement().getContext('2d');
   }
   return measuringContext;
 }
@@ -104,7 +103,7 @@ interface UniqueTextProps {
   linethrough: boolean;
   textAlign: string;
   direction: CanvasDirection;
-  path?: Path;
+  path?: FabricPath;
 }
 
 export interface SerializedTextProps
@@ -163,6 +162,9 @@ export class FabricText<
   declare _reWords: RegExp;
 
   declare text: string;
+
+  // canvas rendering context
+  declare ctx: CanvasRenderingContext2D;
 
   /**
    * Font size (in pixels)
@@ -291,7 +293,7 @@ export class FabricText<
    * });
    * @default
    */
-  declare path?: Path;
+  declare path?: FabricPath;
 
   /**
    * Offset amount for text path starting position
@@ -412,16 +414,17 @@ export class FabricText<
 
   static cacheProperties = [...cacheProperties, ...additionalProps];
 
-  static ownDefaults = textDefaultValues;
+  static ownDefaults: Record<string, any> = textDefaultValues;
 
   static type = 'Text';
 
-  static getDefaults(): Record<string, any> {
+  static getDefaults() {
     return { ...super.getDefaults(), ...FabricText.ownDefaults };
   }
 
-  constructor(text: string, options: Props = {} as Props) {
+  constructor(text: string, ctx: CanvasRenderingContext2D, options: Props = {} as Props) {
     super({ ...options, text, styles: options?.styles || {} });
+    this.ctx = ctx
     this.initialized = true;
     if (this.path) {
       this.setPathInfo();
@@ -653,6 +656,7 @@ export class FabricText<
           break;
       }
     }
+    console.log('_getFontDeclaration', JSON.stringify(this._getFontDeclaration(charStyle, forMeasuring)))
     ctx.font = this._getFontDeclaration(charStyle, forMeasuring);
   }
 
@@ -808,7 +812,6 @@ export class FabricText<
       coupleWidth: number | undefined,
       previousWidth: number | undefined,
       kernedWidth: number | undefined;
-
     if (previousChar && fontCache[previousChar] !== undefined) {
       previousWidth = fontCache[previousChar];
     }
@@ -824,7 +827,7 @@ export class FabricText<
       previousWidth === undefined ||
       coupleWidth === undefined
     ) {
-      const ctx = getMeasuringContext()!;
+      const ctx = this.ctx;
       // send a TRUE to specify measuring font size CACHE_FONT_SIZE
       this._setTextStyles(ctx, charStyle, true);
       if (width === undefined) {
@@ -1025,6 +1028,7 @@ export class FabricText<
     for (let i = 1, len = this._textLines[lineIndex].length; i < len; i++) {
       maxHeight = Math.max(this.getHeightOfChar(lineIndex, i), maxHeight);
     }
+    console.log(maxHeight)
 
     return (this.__lineHeights[lineIndex] =
       maxHeight * this.lineHeight * this._fontSizeMult);
@@ -1163,7 +1167,7 @@ export class FabricText<
 
     ctx.save();
     if (currentDirection !== this.direction) {
-      ctx.canvas.setAttribute('dir', isLtr ? 'ltr' : 'rtl');
+      // ctx.canvas.setAttribute('dir', isLtr ? 'ltr' : 'rtl');
       ctx.direction = isLtr ? 'ltr' : 'rtl';
       ctx.textAlign = isLtr ? LEFT : RIGHT;
     }
@@ -1534,6 +1538,7 @@ export class FabricText<
     property: T
   ): this[T] {
     const charStyle = this._getStyleDeclaration(lineIndex, charIndex);
+    console.log('charIndex', JSON.stringify(property), JSON.stringify(this[property]))
     return (charStyle[property] ?? this[property]) as this[T];
   }
 
@@ -1821,75 +1826,75 @@ export class FabricText<
    * @param {HTMLElement} element Element to parse
    * @param {Object} [options] Options object
    */
-  static async fromElement(
-    element: HTMLElement,
-    options: Abortable,
-    cssRules?: CSSRules
-  ) {
-    const parsedAttributes = parseAttributes(
-      element,
-      FabricText.ATTRIBUTE_NAMES,
-      cssRules
-    );
-
-    const {
-      textAnchor = LEFT as typeof LEFT | typeof CENTER | typeof RIGHT,
-      textDecoration = '',
-      dx = 0,
-      dy = 0,
-      top = 0,
-      left = 0,
-      fontSize = DEFAULT_SVG_FONT_SIZE,
-      strokeWidth = 1,
-      ...restOfOptions
-    } = { ...options, ...parsedAttributes };
-
-    const textContent = (element.textContent || '')
-      .replace(/^\s+|\s+$|\n+/g, '')
-      .replace(/\s+/g, ' ');
-
-    // this code here is probably the usual issue for SVG center find
-    // this can later looked at again and probably removed.
-
-    const text = new this(textContent, {
-        left: left + dx,
-        top: top + dy,
-        underline: textDecoration.includes('underline'),
-        overline: textDecoration.includes('overline'),
-        linethrough: textDecoration.includes('line-through'),
-        // we initialize this as 0
-        strokeWidth: 0,
-        fontSize,
-        ...restOfOptions,
-      }),
-      textHeightScaleFactor = text.getScaledHeight() / text.height,
-      lineHeightDiff =
-        (text.height + text.strokeWidth) * text.lineHeight - text.height,
-      scaledDiff = lineHeightDiff * textHeightScaleFactor,
-      textHeight = text.getScaledHeight() + scaledDiff;
-
-    let offX = 0;
-    /*
-      Adjust positioning:
-        x/y attributes in SVG correspond to the bottom-left corner of text bounding box
-        fabric output by default at top, left.
-    */
-    if (textAnchor === CENTER) {
-      offX = text.getScaledWidth() / 2;
-    }
-    if (textAnchor === RIGHT) {
-      offX = text.getScaledWidth();
-    }
-    text.set({
-      left: text.left - offX,
-      top:
-        text.top -
-        (textHeight - text.fontSize * (0.07 + text._fontSizeFraction)) /
-          text.lineHeight,
-      strokeWidth,
-    });
-    return text;
-  }
+  // static async fromElement(
+  //   element: CanvasRenderingContext2D,
+  //   options: Abortable,
+  //   cssRules?: CSSRules
+  // ) {
+  //   const parsedAttributes = parseAttributes(
+  //     element,
+  //     FabricText.ATTRIBUTE_NAMES,
+  //     cssRules
+  //   );
+  //
+  //   const {
+  //     textAnchor = LEFT as typeof LEFT | typeof CENTER | typeof RIGHT,
+  //     textDecoration = '',
+  //     dx = 0,
+  //     dy = 0,
+  //     top = 0,
+  //     left = 0,
+  //     fontSize = DEFAULT_SVG_FONT_SIZE,
+  //     strokeWidth = 1,
+  //     ...restOfOptions
+  //   } = { ...options, ...parsedAttributes };
+  //
+  //   const textContent = (element.textContent || '')
+  //     .replace(/^\s+|\s+$|\n+/g, '')
+  //     .replace(/\s+/g, ' ');
+  //
+  //   // this code here is probably the usual issue for SVG center find
+  //   // this can later looked at again and probably removed.
+  //
+  //   const text = new this(textContent, {
+  //       left: left + dx,
+  //       top: top + dy,
+  //       underline: textDecoration.includes('underline'),
+  //       overline: textDecoration.includes('overline'),
+  //       linethrough: textDecoration.includes('line-through'),
+  //       // we initialize this as 0
+  //       strokeWidth: 0,
+  //       fontSize,
+  //       ...restOfOptions,
+  //     }),
+  //     textHeightScaleFactor = text.getScaledHeight() / text.height,
+  //     lineHeightDiff =
+  //       (text.height + text.strokeWidth) * text.lineHeight - text.height,
+  //     scaledDiff = lineHeightDiff * textHeightScaleFactor,
+  //     textHeight = text.getScaledHeight() + scaledDiff;
+  //
+  //   let offX = 0;
+  //   /*
+  //     Adjust positioning:
+  //       x/y attributes in SVG correspond to the bottom-left corner of text bounding box
+  //       fabric output by default at top, left.
+  //   */
+  //   if (textAnchor === CENTER) {
+  //     offX = text.getScaledWidth() / 2;
+  //   }
+  //   if (textAnchor === RIGHT) {
+  //     offX = text.getScaledWidth();
+  //   }
+  //   text.set({
+  //     left: text.left - offX,
+  //     top:
+  //       text.top -
+  //       (textHeight - text.fontSize * (0.07 + text._fontSizeFraction)) /
+  //         text.lineHeight,
+  //     strokeWidth,
+  //   });
+  //   return text;
+  // }
 
   /* _FROM_SVG_END_ */
 

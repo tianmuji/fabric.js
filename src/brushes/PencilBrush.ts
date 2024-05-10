@@ -20,7 +20,7 @@ export class PencilBrush extends BaseBrush {
   /**
    * Discard points that are less than `decimate` pixel distant from each other
    * @type Number
-   * @default 0.4
+   * @default 0.4o
    */
   decimate = 0.4;
 
@@ -73,6 +73,7 @@ export class PencilBrush extends BaseBrush {
     // capture coordinates immediately
     // this allows to draw dots (when movement never occurs)
     this._addPoint(pointer);
+    console.log('pointer', JSON.stringify(pointer))
     this._render();
   }
 

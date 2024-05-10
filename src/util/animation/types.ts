@@ -76,7 +76,7 @@ export type TAnimationCallbacks<T> = {
   /**
    * Called when the animation starts
    */
-  onStart: VoidFunction;
+  onStart: Function;
 
   /**
    * Called at each frame of the animation

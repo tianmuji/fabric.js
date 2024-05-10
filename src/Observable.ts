@@ -1,3 +1,4 @@
+// @ts-nocheck
 export type TEventCallback<T = any> = (options: T) => any;
 
 type EventRegistryObject<E> = {
@@ -23,8 +24,8 @@ export class Observable<EventSpec> {
   on<K extends keyof EventSpec, E extends EventSpec[K]>(
     eventName: K,
     handler: TEventCallback<E>
-  ): VoidFunction;
-  on(handlers: EventRegistryObject<EventSpec>): VoidFunction;
+  ): Function;
+  on(handlers: EventRegistryObject<EventSpec>): Function;
   on<K extends keyof EventSpec, E extends EventSpec[K]>(
     arg0: K | EventRegistryObject<EventSpec>,
     handler?: TEventCallback<E>
@@ -62,8 +63,8 @@ export class Observable<EventSpec> {
   once<K extends keyof EventSpec, E extends EventSpec[K]>(
     eventName: K,
     handler: TEventCallback<E>
-  ): VoidFunction;
-  once(handlers: EventRegistryObject<EventSpec>): VoidFunction;
+  ): Function;
+  once(handlers: EventRegistryObject<EventSpec>): Function;
   once<K extends keyof EventSpec, E extends EventSpec[K]>(
     arg0: K | EventRegistryObject<EventSpec>,
     handler?: TEventCallback<E>

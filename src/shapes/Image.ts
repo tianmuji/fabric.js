@@ -1,6 +1,6 @@
+// @ts-nocheck
 import { getFabricDocument, getEnv } from '../env';
 import type { BaseFilter } from '../filters/BaseFilter';
-import { getFilterBackend } from '../filters/FilterBackend';
 import { SHARED_ATTRIBUTES } from '../parser/attributes';
 import { parseAttributes } from '../parser/parseAttributes';
 import type {
@@ -34,10 +34,7 @@ import { log } from '../util/internals/console';
 
 // @todo Would be nice to have filtering code not imported directly.
 
-export type ImageSource =
-  | HTMLImageElement
-  | HTMLVideoElement
-  | HTMLCanvasElement;
+export type ImageSource = ImageBitmap | PixelMap
 
 interface UniqueImageProps {
   srcFromAttribute: boolean;
@@ -49,7 +46,8 @@ interface UniqueImageProps {
   resizeFilter?: Resize;
 }
 
-export const imageDefaultValues: Partial<TClassProperties<FabricImage>> = {
+export const imageDefaultValues: Partial<UniqueImageProps> &
+  Partial<FabricObjectProps> = {
   strokeWidth: 0,
   srcFromAttribute: false,
   minimumScaleTrigger: 0.5,
@@ -170,16 +168,19 @@ export class FabricImage<
   declare resizeFilter: Resize;
 
   declare _element: ImageSource;
-  declare _filteredEl?: HTMLCanvasElement;
+  declare _filteredEl?: CanvasRenderingContext2D;
   declare _originalElement: ImageSource;
+
+  declare elHeight: number;
+  declare elWidth: number;
 
   static type = 'Image';
 
   static cacheProperties = [...cacheProperties, ...IMAGE_PROPS];
 
-  static ownDefaults = imageDefaultValues;
+  static ownDefaults: Record<string, any> = imageDefaultValues;
 
-  static getDefaults(): Record<string, any> {
+  static getDefaults() {
     return {
       ...super.getDefaults(),
       ...FabricImage.ownDefaults,
@@ -194,18 +195,14 @@ export class FabricImage<
    * @param {ImageSource | string} element Image element
    * @param {Object} [options] Options object
    */
-  constructor(elementId: string, options?: Props);
-  constructor(element: ImageSource, options?: Props);
-  constructor(arg0: ImageSource | string, options: Props = {} as Props) {
+  // todo
+  // only use ImageBitmap
+  // fabric is not responsible for fetching images
+  constructor(arg0: ImageSource, options: Props = {} as Props) {
     super({ filters: [], ...options });
-    this.cacheKey = `texture${uid()}`;
+    // this.cacheKey = `texture${uid()}`;
     this.setElement(
-      typeof arg0 === 'string'
-        ? ((
-            (this.canvas && getDocumentFromElement(this.canvas.getElement())) ||
-            getFabricDocument()
-          ).getElementById(arg0) as ImageSource)
-        : arg0,
+      arg0,
       options
     );
   }
@@ -225,15 +222,15 @@ export class FabricImage<
    * @param {Partial<TSize>} [size] Options object
    */
   setElement(element: ImageSource, size: Partial<TSize> = {}) {
-    this.removeTexture(this.cacheKey);
-    this.removeTexture(`${this.cacheKey}_filtered`);
+    // this.removeTexture(this.cacheKey);
+    // this.removeTexture(`${this.cacheKey}_filtered`);
     this._element = element;
     this._originalElement = element;
     this._setWidthHeight(size);
-    element.classList.add(FabricImage.CSS_CANVAS);
-    if (this.filters.length !== 0) {
-      this.applyFilters();
-    }
+    // element.classList.add(FabricImage.CSS_CANVAS);
+    // if (this.filters.length !== 0) {
+    //   this.applyFilters();
+    // }
     // resizeFilters work on the already filtered copy.
     // we need to apply resizeFilters AFTER normal filters.
     // applyResizeFilters is run more often than normal filters
@@ -247,10 +244,10 @@ export class FabricImage<
    * Delete a single texture if in webgl mode
    */
   removeTexture(key: string) {
-    const backend = getFilterBackend(false);
-    if (backend instanceof WebGLFilterBackend) {
-      backend.evictCachesForKey(key);
-    }
+    // const backend = getFilterBackend(false);
+    // if (backend instanceof WebGLFilterBackend) {
+    //   backend.evictCachesForKey(key);
+    // }
   }
 
   /**
@@ -285,16 +282,10 @@ export class FabricImage<
    * Returns original size of an image
    */
   getOriginalSize() {
-    const element = this.getElement() as any;
-    if (!element) {
-      return {
-        width: 0,
-        height: 0,
-      };
-    }
+    const element = this._originalElement
     return {
-      width: element.naturalWidth || element.width,
-      height: element.naturalHeight || element.height,
+      width: element.width,
+      height: element.height,
     };
   }
 
@@ -412,7 +403,7 @@ export class FabricImage<
       strokeSvg = [
         `\t<rect x="${x}" y="${y}" width="${this.width}" height="${
           this.height
-        }" style="${this.getSvgStyles()}" />\n`,
+        }" styles="${this.getSvgStyles()}" />\n`,
       ];
       this.fill = origFill;
     }
@@ -502,13 +493,13 @@ export class FabricImage<
     this._element = canvasEl;
     this._lastScaleX = filter.scaleX = scaleX;
     this._lastScaleY = filter.scaleY = scaleY;
-    getFilterBackend().applyFilters(
-      [filter as BaseFilter],
-      elementToFilter,
-      sourceWidth,
-      sourceHeight,
-      this._element
-    );
+    // getFilterBackend().applyFilters(
+    //   [filter as BaseFilter],
+    //   elementToFilter,
+    //   sourceWidth,
+    //   sourceHeight,
+    //   this._element
+    // );
     this._filterScalingX = canvasEl.width / this._originalElement.width;
     this._filterScalingY = canvasEl.height / this._originalElement.height;
   }
@@ -562,13 +553,13 @@ export class FabricImage<
       this._lastScaleX = 1;
       this._lastScaleY = 1;
     }
-    getFilterBackend().applyFilters(
-      filters,
-      this._originalElement,
-      sourceWidth,
-      sourceHeight,
-      this._element as HTMLCanvasElement
-    );
+    // getFilterBackend().applyFilters(
+    //   filters,
+    //   this._originalElement,
+    //   sourceWidth,
+    //   sourceHeight,
+    //   this._element as HTMLCanvasElement
+    // );
     if (
       this._originalElement.width !== this._element.width ||
       this._originalElement.height !== this._element.height
@@ -602,8 +593,7 @@ export class FabricImage<
     ctx: CanvasRenderingContext2D
   ) {
     ctx.imageSmoothingEnabled = this.imageSmoothing;
-    // cant use ts-expect-error because of ts 5.3 cross check
-    // @ts-ignore TS doesn't respect this type casting
+    // @ts-expect-error TS doesn't respect this type casting
     super.drawCacheOnCanvas(ctx);
   }
 
@@ -622,6 +612,12 @@ export class FabricImage<
     return this.needsItsOwnCache();
   }
 
+  // getImageWidthAndHeight
+  getImageWidthAndHeight() {
+    const image = this._element
+
+  }
+
   _renderFill(ctx: CanvasRenderingContext2D) {
     const elementToDraw = this._element;
     if (!elementToDraw) {
@@ -634,11 +630,10 @@ export class FabricImage<
       // crop values cannot be lesser than 0.
       cropX = Math.max(this.cropX, 0),
       cropY = Math.max(this.cropY, 0),
-      elWidth =
-        (elementToDraw as HTMLImageElement).naturalWidth || elementToDraw.width,
-      elHeight =
-        (elementToDraw as HTMLImageElement).naturalHeight ||
-        elementToDraw.height,
+      // todo
+      // how to get image width and height
+      elWidth = this.elWidth,
+      elHeight = this.elHeight,
       sX = cropX * scaleX,
       sY = cropY * scaleY,
       // the width height cannot exceed element width/height, starting from the crop offset.
@@ -648,7 +643,6 @@ export class FabricImage<
       y = -h / 2,
       maxDestW = Math.min(w, elWidth / scaleX - cropX),
       maxDestH = Math.min(h, elHeight / scaleY - cropY);
-
     elementToDraw &&
       ctx.drawImage(elementToDraw, sX, sY, sW, sH, x, y, maxDestW, maxDestH);
   }
@@ -675,10 +669,16 @@ export class FabricImage<
    * Set the width and the height of the image object, using the element or the
    * options.
    */
-  _setWidthHeight({ width, height }: Partial<TSize> = {}) {
-    const size = this.getOriginalSize();
-    this.width = width || size.width;
-    this.height = height || size.height;
+  _setWidthHeight({ width, height, elWidth, elHeight }: TSize = {}) {
+    // const size = this.getOriginalSize();
+    // todo
+    // 都使用图片的宽高
+    console.log('width', width.toString())
+    this.width = width;
+    this.height = height;
+    this.elWidth = width;
+    this.elHeight = height;
+
   }
 
   /**
@@ -836,25 +836,25 @@ export class FabricImage<
    * @param {AbortSignal} [options.signal] handle aborting, see https://developer.mozilla.org/en-US/docs/Web/API/AbortController/signal
    * @param {Function} callback Callback to execute when Image object is created
    */
-  static async fromElement(
-    element: HTMLElement,
-    options: Abortable = {},
-    cssRules?: CSSRules
-  ) {
-    const parsedAttributes = parseAttributes(
-      element,
-      this.ATTRIBUTE_NAMES,
-      cssRules
-    );
-    return this.fromURL(
-      parsedAttributes['xlink:href'],
-      options,
-      parsedAttributes
-    ).catch((err) => {
-      log('log', 'Unable to parse Image', err);
-      return null;
-    });
-  }
+  // static async fromElement(
+  //   element: HTMLElement,
+  //   options: Abortable = {},
+  //   cssRules?: CSSRules
+  // ) {
+  //   const parsedAttributes = parseAttributes(
+  //     element,
+  //     this.ATTRIBUTE_NAMES,
+  //     cssRules
+  //   );
+  //   return this.fromURL(
+  //     parsedAttributes['xlink:href'],
+  //     options,
+  //     parsedAttributes
+  //   ).catch((err) => {
+  //     log('log', 'Unable to parse Image', err);
+  //     return null;
+  //   });
+  // }
 }
 
 classRegistry.setClass(FabricImage);
